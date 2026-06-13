@@ -117,6 +117,7 @@ let coverageSort = {
 };
 const productSourceTypes = [
     "homepage",
+    "changelog",
     "release_notes",
     "blog",
     "news",

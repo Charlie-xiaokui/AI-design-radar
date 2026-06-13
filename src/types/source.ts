@@ -28,6 +28,7 @@ export const GITHUB_TYPES = ["repo", "org", "none"] as const;
 export const REVIEW_STATUSES = ["pending", "verified", "rejected"] as const;
 export const PRODUCT_SOURCE_TYPES = [
   "homepage",
+  "changelog",
   "release_notes",
   "github_repo",
   "community",
@@ -53,6 +54,7 @@ export const SIGNAL_HEALTH_STATES = ["unchecked", "ok", "failed", "redirected", 
 export const SOURCE_RELATION_TYPES = ["linked_from_update", "media_followup", "official_related", "community_related"] as const;
 export const SUGGESTED_SOURCE_STATUSES = ["suggested", "pending_review", "verified", "rejected"] as const;
 export const ACCESS_TYPES = ["public", "login_required", "manual", "unknown"] as const;
+export const RAW_SIGNAL_STATUSES = ["discovered", "pending_review", "approved", "rejected", "archived"] as const;
 export const SOURCE_TYPES = [
   "homepage",
   "github",
@@ -74,6 +76,7 @@ export type SignalHealth = (typeof SIGNAL_HEALTH_STATES)[number];
 export type SourceRelationType = (typeof SOURCE_RELATION_TYPES)[number];
 export type SuggestedSourceStatus = (typeof SUGGESTED_SOURCE_STATUSES)[number];
 export type AccessType = (typeof ACCESS_TYPES)[number];
+export type RawSignalStatus = (typeof RAW_SIGNAL_STATUSES)[number];
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
 export interface ProductSource {
@@ -245,4 +248,22 @@ export interface SourceCoverage {
   missing_media_source: boolean;
   needs_review_count: number;
   coverage_score: number;
+}
+
+export interface RawSignal {
+  id: string;
+  product: string;
+  source_id: string;
+  source_url: string;
+  signal_url: string;
+  title: string;
+  description: string;
+  published_at: string;
+  raw_text: string;
+  media_urls: string[];
+  media_types: string[];
+  source_type: ProductSourceType;
+  status: RawSignalStatus;
+  created_at: string;
+  updated_at: string;
 }

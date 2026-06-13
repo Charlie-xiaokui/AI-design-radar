@@ -8,6 +8,7 @@
     "dev": "npm run build:client && node --watch --experimental-strip-types src/server.ts",
     "start": "npm run build:client && node --experimental-strip-types src/server.ts",
     "scan-sources": "node --experimental-strip-types src/scripts/scan-sources.ts",
+    "collect:signals": "node --experimental-strip-types src/scripts/collect-signals.ts",
     "audit-sources": "node --experimental-strip-types src/scripts/audit-sources.ts",
     "generate:audit-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",
     "generate:batch-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",
@@ -21,6 +22,7 @@
     "test:source-network": "node --experimental-strip-types src/scripts/test-source-network.ts",
     "test:source-candidates": "node --experimental-strip-types src/scripts/test-source-candidates.ts",
     "test:inspector-navigation": "node --experimental-strip-types src/scripts/test-inspector-navigation.ts",
+    "test:signal-collector": "node --experimental-strip-types src/scripts/test-signal-collector-phase1.ts",
     "generate:source-review": "node --experimental-strip-types src/scripts/generate-source-review.ts",
     "typecheck": "node --experimental-strip-types src/scripts/check-typescript.ts"
   }

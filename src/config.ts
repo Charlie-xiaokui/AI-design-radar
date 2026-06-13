@@ -12,6 +12,7 @@ export const config = {
   reviewsFile: path.join(rootDir, "data", "source_reviews.json"),
   auditFile: path.join(rootDir, "data", "source_audit.json"),
   candidatesFile: path.join(rootDir, "data", "source_candidates.json"),
+  rawSignalsFile: path.join(rootDir, "data", "raw_signals.json"),
   auditReportFile: path.join(rootDir, "source_audit_report.md"),
   registryDiagnosticsFile: path.join(rootDir, "source_registry_diagnostics.md"),
   coverageFile: path.join(rootDir, "data", "source_coverage.json"),
