@@ -12,6 +12,8 @@ import {
 import { filterEligibleSignalSources, summarizeSignalSourceEligibility } from "../services/signal-source-filter.ts";
 import { collectSignalSummary } from "../services/signal-collector.ts";
 import { runtimeDefaults } from "../services/source-signals.ts";
+import { auditRawSignals } from "../services/signal-audit.ts";
+import { isAllowedRawSignalTransition } from "../services/raw-signal-review.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -91,6 +93,7 @@ function rawSignal(partial: Partial<RawSignal>): RawSignal {
     media_types: partial.media_types ?? [],
     source_type: partial.source_type ?? "blog",
     status: partial.status ?? "discovered",
+    quality_score: partial.quality_score ?? 75,
     created_at: partial.created_at ?? now,
     updated_at: partial.updated_at ?? now,
   };
@@ -127,6 +130,18 @@ try {
 
   const updated = await updateRawSignalStatus("signal_new", "pending_review", rawSignalsFile);
   assert(updated.status === "pending_review", "updateRawSignalStatus should update status");
+  assert(isAllowedRawSignalTransition("discovered", "approved"), "Raw Signals review should allow discovered -> approved");
+  assert(isAllowedRawSignalTransition("discovered", "rejected"), "Raw Signals review should allow discovered -> rejected");
+  assert(isAllowedRawSignalTransition("approved", "archived"), "Raw Signals review should allow approved -> archived");
+  assert(!isAllowedRawSignalTransition("rejected", "approved"), "Raw Signals review should reject unsupported status transitions");
+
+  const auditReportFile = path.join(tempDir, "signal_audit_report.json");
+  const auditReport = await auditRawSignals(rawSignalsFile, auditReportFile);
+  assert(auditReport.total_signals >= 3, "Signal audit should count total signals");
+  assert(auditReport.average_raw_text_length > 0, "Signal audit should calculate average raw_text length");
+  assert(auditReport.top_20_longest_signals.length > 0, "Signal audit should include longest signals");
+  assert(auditReport.top_20_shortest_signals.length > 0, "Signal audit should include shortest signals");
+  assert(JSON.parse(await readFile(auditReportFile, "utf8")).total_signals === auditReport.total_signals, "Signal audit should write report JSON");
 
   const registry = [
     product({
@@ -162,9 +177,71 @@ try {
     assert(summary.total_sources === 8, "CLI summary should include total sources");
     assert(summary.eligible_public_sources === 3, "CLI summary should include eligible public sources");
     assert(summary.skipped_sources === 5, "CLI summary should include skipped sources");
-    assert(summary.signals_discovered === 0, "Phase 1 should not discover signals yet");
-    assert(!fetchCalled, "Phase 1 collector must not fetch external URLs");
+    assert(summary.sources_scanned === 1, "Phase 2A should scan only supported eligible sources");
+    assert(summary.signals_discovered === 0, "Failed fetches should not discover signals");
+    assert(fetchCalled, "Phase 2A should fetch supported release_notes/changelog sources");
     assert(JSON.stringify(await readRawSignals(rawSignalsFile)) !== "", "collectSignalSummary should ensure raw_signals.json exists");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const collectorFile = path.join(tempDir, "collector_raw_signals.json");
+  const collectorRegistry = [
+    product({
+      product_name: "Collector Product",
+      sources: [
+        source({ id: "collector-release-notes", type: "release_notes", url: "https://example.com/release-notes", purpose: "updates", access_type: "public", status: "active" }),
+        source({ id: "collector-github-releases", type: "github_releases", url: "https://github.com/example/project/releases", purpose: "updates", access_type: "public", status: "active" }),
+        source({ id: "collector-github-atom", type: "github_releases_rss", url: "https://github.com/example/project/releases.atom", purpose: "updates", access_type: "public", status: "active" }),
+        source({ id: "collector-blog-skipped-phase2a", type: "blog", url: "https://example.com/blog", purpose: "updates", access_type: "public", status: "active" }),
+      ],
+    }),
+  ];
+  const fetchedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    fetchedUrls.push(url);
+    if (url === "https://example.com/release-notes") {
+      return new Response(`<!doctype html><html><head><title>Release Notes</title><meta name="description" content="Latest updates"></head><body><header>Pricing Marketplace Security</header><nav>Docs Menu Breadcrumbs</nav><main><h1>Release Notes</h1><time datetime="2026-06-12">June 12, 2026</time><article><h2>New canvas controls</h2><p>We shipped better controls.</p></article><img src="/screen.png"></main><footer>Footer links and legal terms</footer></body></html>`, {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }
+    if (url === "https://api.github.com/repos/example/project/releases?per_page=50") {
+      return new Response(JSON.stringify([
+        { html_url: "https://github.com/example/project/releases/tag/v1.2.0", name: "v1.2.0", tag_name: "v1.2.0", published_at: "2026-06-10T12:00:00Z", body: "Added release flow", draft: false },
+      ]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (url === "https://github.com/example/project/releases.atom") {
+      return new Response(`<feed><entry><title>v1.2.1</title><link href="https://github.com/example/project/releases/tag/v1.2.1"/><updated>2026-06-11T12:00:00Z</updated><content>Added atom release notes</content></entry></feed>`, {
+        status: 200,
+        headers: { "content-type": "application/atom+xml" },
+      });
+    }
+    throw new Error(`Unexpected collector URL: ${url}`);
+  };
+  try {
+    const firstRun = await collectSignalSummary(collectorRegistry, collectorFile);
+    assert(firstRun.sources_scanned === 3, `Expected 3 supported sources scanned, got ${firstRun.sources_scanned}`);
+    assert(firstRun.signals_discovered === 3, `Expected 3 discovered signals, got ${firstRun.signals_discovered}`);
+    assert(firstRun.duplicates_skipped === 0, "First run should not skip duplicates");
+    assert(!fetchedUrls.includes("https://example.com/blog"), "Phase 2A should not fetch unsupported blog/news sources yet");
+    const collected = await readRawSignals(collectorFile);
+    assert(collected.length === 3, `Expected 3 raw signals, got ${collected.length}`);
+    assert(collected.every((item) => item.status === "discovered"), "Collected signals should use discovered status");
+    assert(collected.every((item) => typeof item.quality_score === "number" && item.quality_score > 0), "Collected signals should include quality_score");
+    assert(collected.some((item) => item.source_type === "release_notes" && item.title === "Release Notes"), "Release notes signal should be collected from HTML title");
+    const htmlSignal = collected.find((item) => item.source_type === "release_notes")!;
+    assert(!htmlSignal.raw_text.includes("Pricing Marketplace Security"), "HTML extraction should remove header/navigation text");
+    assert(!htmlSignal.raw_text.includes("Footer links"), "HTML extraction should remove footer text");
+    assert(htmlSignal.raw_text.includes("New canvas controls"), "HTML extraction should keep release entry content");
+    assert(collected.some((item) => item.signal_url === "https://github.com/example/project/releases/tag/v1.2.0" && item.raw_text.includes("Added release flow")), "GitHub releases API signal should be collected");
+    assert(collected.some((item) => item.signal_url === "https://github.com/example/project/releases/tag/v1.2.1" && item.raw_text.includes("Added atom release notes")), "GitHub Atom release signal should be collected");
+
+    const secondRun = await collectSignalSummary(collectorRegistry, collectorFile);
+    assert(secondRun.signals_discovered === 0, "Duplicate run should not discover new signals");
+    assert(secondRun.duplicates_skipped === 3, `Duplicate run should skip 3 signals, got ${secondRun.duplicates_skipped}`);
+    assert((await readRawSignals(collectorFile)).length === 3, "Duplicate run should not append repeated raw signals");
   } finally {
     globalThis.fetch = originalFetch;
   }

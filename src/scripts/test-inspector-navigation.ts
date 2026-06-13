@@ -53,6 +53,11 @@ assert(html.includes("Formal Sources") && html.includes("+ Add Source"), "Inspec
 assert(html.includes('id="closeSourceDialog"'), "Add Source dialog should have an explicit close control");
 assert(client.includes("closeSourceDialog"), "Add Source close control should have a dedicated handler");
 assert(client.includes("closeDialog(event, inspectorDialog)"), "Inspector close control should close only the Inspector dialog");
+assert(html.includes("Raw Signals Review"), "Raw Signals review panel should be present");
+assert(client.includes('/api/raw-signals'), "Raw Signals page should load raw signals from the API");
+assert(client.includes("renderRawSignals"), "Raw Signals page should render collected signals");
+assert(client.includes("data-raw-signal-action"), "Raw Signals page should expose status action buttons");
+assert(server.includes('/api/raw-signals'), "Server should expose raw signal API routes");
 assert(html.includes('id="confirmDialog"'), "Delete actions should use an application confirmation dialog");
 assert(client.includes("confirmAction("), "Delete actions should await the application confirmation dialog");
 assert(!client.includes('confirm("删除这个正式 Source'), "Formal source deletion should not block on native confirm");

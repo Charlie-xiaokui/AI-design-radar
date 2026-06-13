@@ -264,6 +264,7 @@ export interface RawSignal {
   media_types: string[];
   source_type: ProductSourceType;
   status: RawSignalStatus;
+  quality_score: number;
   created_at: string;
   updated_at: string;
 }

@@ -1,0 +1,411 @@
+{
+  "total_signals": 68,
+  "average_raw_text_length": 3013,
+  "top_20_longest_signals": [
+    {
+      "id": "raw_claude_claude_code_releases_1qoz178",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.141",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.141",
+      "raw_text_length": 7452,
+      "quality_score": 68
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1gxz4tw",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.144",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.144",
+      "raw_text_length": 6413,
+      "quality_score": 68
+    },
+    {
+      "id": "raw_claude_claude_release_notes_134th70",
+      "product": "Claude",
+      "source_id": "claude-release-notes",
+      "source_type": "release_notes",
+      "title": "Release notes | Claude Help Center",
+      "signal_url": "https://support.claude.com/en/articles/12138966-release-notes",
+      "raw_text_length": 6000,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_lovable_lovable_changelog_icgs03",
+      "product": "Lovable",
+      "source_id": "lovable-changelog",
+      "source_type": "release_notes",
+      "title": "Lovable changelog - Lovable Documentation",
+      "signal_url": "https://docs.lovable.dev/changelog",
+      "raw_text_length": 6000,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_bolt_bolt_release_notes_pvj2o7",
+      "product": "Bolt",
+      "source_id": "bolt-release-notes",
+      "source_type": "release_notes",
+      "title": "Release Notes - Bolt",
+      "signal_url": "https://support.bolt.new/release-notes",
+      "raw_text_length": 6000,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_linear_linear_changelog_zkteb",
+      "product": "Linear",
+      "source_id": "linear-changelog",
+      "source_type": "release_notes",
+      "title": "Changelog – Linear",
+      "signal_url": "https://linear.app/changelog",
+      "raw_text_length": 6000,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_n8n_n8n_changelog_1ooxiu1",
+      "product": "n8n",
+      "source_id": "n8n-changelog",
+      "source_type": "release_notes",
+      "title": "Release notes | n8n Docs",
+      "signal_url": "https://docs.n8n.io/release-notes/",
+      "raw_text_length": 6000,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1ueu7ec",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.139",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.139",
+      "raw_text_length": 5920,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_n848b8",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.154",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.154",
+      "raw_text_length": 5892,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_cursor_cursor_changelog_j5pe96",
+      "product": "Cursor",
+      "source_id": "cursor-changelog",
+      "source_type": "release_notes",
+      "title": "What&#x27;s New in Cursor — Latest Updates & Release Notes",
+      "signal_url": "https://cursor.com/changelog",
+      "raw_text_length": 5886,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_comfyui_comfyui_changelog_hg1t5b",
+      "product": "ComfyUI",
+      "source_id": "comfyui-changelog",
+      "source_type": "release_notes",
+      "title": "Releases · Comfy-Org/ComfyUI · GitHub",
+      "signal_url": "https://github.com/Comfy-Org/ComfyUI/releases",
+      "raw_text_length": 5877,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_supabase_ai_supabase_ai_changelog_4avs28",
+      "product": "Supabase AI",
+      "source_id": "supabase-ai-changelog",
+      "source_type": "release_notes",
+      "title": "Changelog",
+      "signal_url": "https://supabase.com/changelog",
+      "raw_text_length": 5442,
+      "quality_score": 92
+    },
+    {
+      "id": "raw_claude_claude_code_releases_54q1sk",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.136",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.136",
+      "raw_text_length": 5412,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1itfygk",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.119",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.119",
+      "raw_text_length": 5234,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_qh473o",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.153",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.153",
+      "raw_text_length": 4553,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_tq45w4",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.152",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.152",
+      "raw_text_length": 4550,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1k6z3mc",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.143",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.143",
+      "raw_text_length": 4372,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_scl0qc",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.128",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.128",
+      "raw_text_length": 4286,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1f3ks9g",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.121",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.121",
+      "raw_text_length": 4272,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_continue_continue_changelog_f8bmn",
+      "product": "Continue",
+      "source_id": "continue-changelog",
+      "source_type": "release_notes",
+      "title": "Releases · continuedev/continue · GitHub",
+      "signal_url": "https://github.com/continuedev/continue/releases",
+      "raw_text_length": 4147,
+      "quality_score": 100
+    }
+  ],
+  "top_20_shortest_signals": [
+    {
+      "id": "raw_claude_claude_code_releases_p2ikvo",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.177",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.177",
+      "raw_text_length": 11,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1xnu66s",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.138",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.138",
+      "raw_text_length": 36,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1fjdilw",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.168",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.168",
+      "raw_text_length": 60,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1isdhec",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.167",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.167",
+      "raw_text_length": 60,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1padez8",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.165",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.165",
+      "raw_text_length": 60,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1vq304",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.137",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.137",
+      "raw_text_length": 77,
+      "quality_score": 60
+    },
+    {
+      "id": "raw_claude_claude_code_releases_6z4ed0",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.159",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.159",
+      "raw_text_length": 83,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_10843h0",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.150",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.150",
+      "raw_text_length": 83,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_gq4aqc",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.156",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.156",
+      "raw_text_length": 116,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_18lkuok",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.123",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.123",
+      "raw_text_length": 133,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_13xz9o4",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.148",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.148",
+      "raw_text_length": 134,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_a84d5g",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.158",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.158",
+      "raw_text_length": 158,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_ldpvqs",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.131",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.131",
+      "raw_text_length": 235,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_122ig1g",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.173",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.173",
+      "raw_text_length": 289,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_vkiigk",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.175",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.175",
+      "raw_text_length": 328,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1btices",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.170",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.170",
+      "raw_text_length": 471,
+      "quality_score": 80
+    },
+    {
+      "id": "raw_manus_source_candidate_manus_release_notes_1781254138971_1rweus7",
+      "product": "Manus",
+      "source_id": "source-candidate-manus-release_notes-1781254138971",
+      "source_type": "release_notes",
+      "title": "Updates - Manus",
+      "signal_url": "https://manus.im/updates",
+      "raw_text_length": 480,
+      "quality_score": 67
+    },
+    {
+      "id": "raw_cline_cline_changelog_3coqgn",
+      "product": "Cline",
+      "source_id": "cline-changelog",
+      "source_type": "release_notes",
+      "title": "Releases · cline/cline · GitHub",
+      "signal_url": "https://github.com/cline/cline/releases",
+      "raw_text_length": 947,
+      "quality_score": 92
+    },
+    {
+      "id": "raw_figma_ai_figma_ai_changelog_1opd5e6",
+      "product": "Figma AI",
+      "source_id": "figma-ai-changelog",
+      "source_type": "release_notes",
+      "title": "Figma product news and release notes",
+      "signal_url": "https://www.figma.com/release-notes/",
+      "raw_text_length": 1428,
+      "quality_score": 100
+    },
+    {
+      "id": "raw_claude_claude_code_releases_1txyzzo",
+      "product": "Claude",
+      "source_id": "claude-code-releases",
+      "source_type": "github_releases",
+      "title": "v2.1.140",
+      "signal_url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.140",
+      "raw_text_length": 1595,
+      "quality_score": 80
+    }
+  ],
+  "signals_with_media": 18,
+  "signals_without_media": 50,
+  "signals_missing_published_at": 1
+}

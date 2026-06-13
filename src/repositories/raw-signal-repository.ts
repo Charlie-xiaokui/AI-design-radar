@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.ts";
 import { RAW_SIGNAL_STATUSES, type RawSignal, type RawSignalStatus } from "../types/source.ts";
+import { calculateSignalQualityScore } from "../services/signal-quality.ts";
 import { writeJsonFile } from "./json-file.ts";
 
 export interface RawSignalUpsertResult {
@@ -38,7 +39,12 @@ function duplicateKeyBySourceDateTitle(signal: Pick<RawSignal, "source_id" | "pu
 export async function readRawSignals(filePath = config.rawSignalsFile): Promise<RawSignal[]> {
   await ensureRawSignalFile(filePath);
   const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
-  return Array.isArray(parsed) ? parsed as RawSignal[] : [];
+  return Array.isArray(parsed)
+    ? (parsed as RawSignal[]).map((signal) => ({
+      ...signal,
+      quality_score: calculateSignalQualityScore(signal),
+    }))
+    : [];
 }
 
 export async function writeRawSignals(signals: RawSignal[], filePath = config.rawSignalsFile): Promise<void> {
@@ -58,15 +64,30 @@ export function findDuplicateRawSignal(signal: RawSignal, existing: RawSignal[])
 
 function mergeRawSignal(existing: RawSignal, incoming: RawSignal): RawSignal {
   if (LOCKED_STATUSES.has(existing.status)) return existing;
+  if ((incoming.quality_score ?? 0) > (existing.quality_score ?? 0)) {
+    return {
+      ...existing,
+      title: incoming.title || existing.title,
+      description: incoming.description || existing.description,
+      published_at: incoming.published_at || existing.published_at,
+      raw_text: incoming.raw_text || existing.raw_text,
+      media_urls: [...new Set([...incoming.media_urls, ...existing.media_urls])],
+      media_types: [...new Set([...incoming.media_types, ...existing.media_types])],
+      quality_score: incoming.quality_score,
+      updated_at: new Date().toISOString(),
+    };
+  }
   const description = existing.description || incoming.description;
   const rawText = existing.raw_text || incoming.raw_text;
   const mediaUrls = [...new Set([...existing.media_urls, ...incoming.media_urls])];
   const mediaTypes = [...new Set([...existing.media_types, ...incoming.media_types])];
+  const qualityScore = Math.max(existing.quality_score ?? 0, incoming.quality_score ?? 0);
   if (
     description === existing.description
     && rawText === existing.raw_text
     && mediaUrls.length === existing.media_urls.length
     && mediaTypes.length === existing.media_types.length
+    && qualityScore === existing.quality_score
   ) {
     return existing;
   }
@@ -76,6 +97,7 @@ function mergeRawSignal(existing: RawSignal, incoming: RawSignal): RawSignal {
     raw_text: rawText,
     media_urls: mediaUrls,
     media_types: mediaTypes,
+    quality_score: qualityScore,
     updated_at: new Date().toISOString(),
   };
 }
@@ -86,9 +108,10 @@ export async function upsertRawSignals(incoming: RawSignal[], filePath = config.
   let merged = 0;
   let duplicatesSkipped = 0;
   for (const signal of incoming) {
-    const duplicate = findDuplicateRawSignal(signal, signals);
+    const normalizedSignal = { ...signal, quality_score: calculateSignalQualityScore(signal) };
+    const duplicate = findDuplicateRawSignal(normalizedSignal, signals);
     if (!duplicate) {
-      signals.push(signal);
+      signals.push(normalizedSignal);
       inserted += 1;
       continue;
     }
@@ -97,7 +120,7 @@ export async function upsertRawSignals(incoming: RawSignal[], filePath = config.
       duplicatesSkipped += 1;
       continue;
     }
-    const mergedSignal = mergeRawSignal(duplicate, signal);
+    const mergedSignal = mergeRawSignal(duplicate, normalizedSignal);
     if (JSON.stringify(mergedSignal) === JSON.stringify(duplicate)) duplicatesSkipped += 1;
     else {
       signals[index] = mergedSignal;

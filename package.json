@@ -9,6 +9,7 @@
     "start": "npm run build:client && node --experimental-strip-types src/server.ts",
     "scan-sources": "node --experimental-strip-types src/scripts/scan-sources.ts",
     "collect:signals": "node --experimental-strip-types src/scripts/collect-signals.ts",
+    "audit:signals": "node --experimental-strip-types src/scripts/audit-signals.ts",
     "audit-sources": "node --experimental-strip-types src/scripts/audit-sources.ts",
     "generate:audit-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",
     "generate:batch-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",

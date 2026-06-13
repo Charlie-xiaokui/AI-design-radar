@@ -24,6 +24,16 @@
 
     <main>
       <section class="stats" id="stats"></section>
+      <section class="raw-signals-panel">
+        <div class="coverage-heading"><div><p class="eyebrow">RAW SIGNALS</p><h2>Raw Signals Review</h2></div><span id="rawSignalCount"></span></div>
+        <section class="stats compact" id="rawSignalStats"></section>
+        <div class="raw-signal-filters">
+          <label>Product<select id="rawSignalProductFilter"><option value="">All</option></select></label>
+          <label>Source Type<select id="rawSignalTypeFilter"><option value="">All</option></select></label>
+          <label>Status<select id="rawSignalStatusFilter"><option value="">All</option></select></label>
+        </div>
+        <div class="raw-signal-list" id="rawSignalList"></div>
+      </section>
       <section class="coverage-panel">
         <div class="coverage-heading"><div><p class="eyebrow">SOURCE COVERAGE</p><h2>Coverage Dashboard</h2></div><span id="coverageCount"></span></div>
         <div class="coverage-filters">

@@ -4,6 +4,7 @@ type HealthState = "accessible" | "unavailable" | "redirected" | "timeout";
 type RegistrySourceType = "github" | "github_releases" | "changelog" | "release_notes" | "news" | "docs" | "product_hunt" | "x" | "rss";
 type ProductSourcePurpose = "identity" | "updates" | "media" | "discovery" | "community";
 type AccessType = "public" | "login_required" | "manual" | "unknown";
+type RawSignalStatus = "discovered" | "pending_review" | "approved" | "rejected" | "archived";
 interface ProductSource { id: string; type: string; url: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; priority: number; status: "active" | "disabled" | "paused"; collector: string; last_checked_at: string; last_update_at: string; screenshot_count: number; gif_count: number; video_count: number; health: "unchecked" | "ok" | "failed" | "redirected" | "timeout"; scan_frequency: string; notes: string; }
 interface SuggestedSource { id: string; type: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; url: string; reason: string; confidence: number; status: "suggested" | "pending_review" | "verified" | "rejected"; parent_source_id: string; relation_type: string; }
 interface SourceCandidate { candidate_key: string; product?: string; product_id?: string; product_slug?: string; product_name?: string; source_id?: string; url: string; type: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; priority: "P1" | "P2" | "P3"; source: string; status: "pending_review" | "pending" | "suggested" | "accepted" | "rejected"; }
@@ -13,6 +14,7 @@ interface Health { source_id: string; source_type: SourceType; url: string; fina
 interface Audit { product_name: string; updates_30d: number; latest_update_at: string; screenshot_count: number; gif_count: number; video_count: number; media_score: number; activity_score: number; collector_priority: "high" | "medium" | "low"; }
 interface Coverage { product_name: string; source_id: string; identity_sources: number; updates_sources: number; media_sources: number; discovery_sources: number; community_sources: number; x_sources: number; github_sources: number; missing_identity_source: boolean; missing_updates_source: boolean; missing_media_source: boolean; needs_review_count: number; coverage_score: number; }
 interface Review { source_id: string; source_type: SourceType; manual_verified: boolean; media_marked: boolean; updated_at: string; }
+interface RawSignal { id: string; product: string; source_id: string; source_url: string; signal_url: string; title: string; description: string; published_at: string; raw_text: string; media_urls: string[]; media_types: string[]; source_type: string; status: RawSignalStatus; quality_score: number; created_at: string; updated_at: string; }
 interface Snapshot { sources: Source[]; health: Health[]; reviews: Review[]; audit: Audit[]; candidates: SourceCandidate[]; recommendations: Record<string, SourceRecommendation[]>; coverage: Coverage[]; }
 
 const categories: Category[] = ["Chat", "IDE", "Workflow", "Agent", "Canvas", "Research", "Design", "Automation", "Prompt→App", "Other"];
@@ -38,6 +40,7 @@ const inspectorFields: Array<{ field: string; label: string; resolve: (source: S
   { field: "blog_url", label: "Blog", resolve: (source) => source.blog_url },
 ];
 let snapshot: Snapshot = { sources: [], health: [], reviews: [], audit: [], candidates: [], recommendations: {}, coverage: [] };
+let rawSignals: RawSignal[] = [];
 let currentInspectorId = "";
 let addingFormalSource = false;
 type CoverageSortKey = "coverage_score" | "updates_sources" | "media_sources" | "discovery_sources" | "community_sources" | "github_sources" | "needs_review_count";
@@ -161,6 +164,11 @@ const coverageFilters = {
   missingGithub: $("#coverageMissingGithub") as HTMLInputElement,
   missingX: $("#coverageMissingX") as HTMLInputElement,
   needsReview: $("#coverageNeedsReview") as HTMLInputElement,
+};
+const rawSignalFilters = {
+  product: $("#rawSignalProductFilter") as HTMLSelectElement,
+  type: $("#rawSignalTypeFilter") as HTMLSelectElement,
+  status: $("#rawSignalStatusFilter") as HTMLSelectElement,
 };
 
 function escapeHtml(value: unknown): string {
@@ -426,6 +434,71 @@ function renderCoverage(): void {
   }).join("");
 }
 
+function rawSignalActions(signal: RawSignal): string {
+  const actions: Partial<Record<RawSignalStatus, RawSignalStatus[]>> = {
+    discovered: ["approved", "rejected"],
+    approved: ["archived"],
+  };
+  return (actions[signal.status] ?? [])
+    .map((status) => `<button class="mini-button" data-raw-signal-action="${status}" data-id="${escapeHtml(signal.id)}">${status}</button>`)
+    .join("");
+}
+
+function mediaPreview(signal: RawSignal): string {
+  const mediaUrl = safeArray<string>(signal.media_urls)[0];
+  if (!mediaUrl) return `<div class="raw-signal-media empty">No media</div>`;
+  const type = safeArray<string>(signal.media_types)[0] ?? "";
+  if (type === "video" || /\.(?:mp4|webm|mov)(?:$|[?#])/i.test(mediaUrl)) {
+    return `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>`;
+  }
+  return `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>`;
+}
+
+function fillRawSignalFilters(): void {
+  const current = {
+    product: rawSignalFilters.product.value,
+    type: rawSignalFilters.type.value,
+    status: rawSignalFilters.status.value,
+  };
+  const optionList = (values: string[]) => `<option value="">All</option>${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+  rawSignalFilters.product.innerHTML = optionList([...new Set(rawSignals.map((item) => item.product).filter(Boolean))].sort());
+  rawSignalFilters.type.innerHTML = optionList([...new Set(rawSignals.map((item) => item.source_type).filter(Boolean))].sort());
+  rawSignalFilters.status.innerHTML = optionList(["discovered", "pending_review", "approved", "rejected", "archived"]);
+  rawSignalFilters.product.value = current.product;
+  rawSignalFilters.type.value = current.type;
+  rawSignalFilters.status.value = current.status;
+}
+
+function visibleRawSignals(): RawSignal[] {
+  return safeArray<RawSignal>(rawSignals).filter((signal) =>
+    (!rawSignalFilters.product.value || signal.product === rawSignalFilters.product.value)
+    && (!rawSignalFilters.type.value || signal.source_type === rawSignalFilters.type.value)
+    && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value));
+}
+
+function renderRawSignals(): void {
+  fillRawSignalFilters();
+  const visible = visibleRawSignals();
+  const all = safeArray<RawSignal>(rawSignals);
+  $("#rawSignalCount").textContent = `${visible.length} / ${all.length} signals`;
+  $("#rawSignalStats").innerHTML = [
+    [all.length, "Total Signals"],
+    [all.filter((item) => item.status === "approved").length, "Approved"],
+    [all.filter((item) => item.status === "rejected").length, "Rejected"],
+    [all.filter((item) => item.status === "archived").length, "Archived"],
+    [all.filter((item) => safeArray<string>(item.media_urls).length > 0).length, "With Media"],
+  ].map(([value, label]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+  $("#rawSignalList").innerHTML = visible.length ? visible.map((signal) => `<article class="raw-signal-card">
+    ${mediaPreview(signal)}
+    <div class="raw-signal-body">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span class="review-status ${escapeHtml(signal.status)}">${escapeHtml(signal.status)}</span></div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+      <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 220))}</p>
+      <div class="raw-signal-actions"><a class="mini-button" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>${rawSignalActions(signal)}</div>
+    </div>
+  </article>`).join("") : `<div class="empty-state">No raw signals match the current filters.</div>`;
+}
+
 function renderUrlCell(source: Source, type: SourceType, label: string, field: keyof Source): string {
   const url = String(source[field] ?? "");
   if (!url) return `<div class="url-cell"><div class="url-head"><span class="url-type">${label}</span></div><div class="empty-url">未配置 URL</div></div>`;
@@ -493,6 +566,7 @@ function render(): void {
     </div>
     <div class="url-grid">${sourceTypes.map(({ type, label, field }) => renderUrlCell(source, type, label, field)).join("")}</div>
   </article>`).join("") : `<div class="empty-state">没有符合当前筛选条件的 Source。</div>`;
+  renderRawSignals();
   renderCoverage();
 }
 
@@ -520,7 +594,15 @@ function openForm(source?: Source): void {
   window.setTimeout(() => { if (!dialog.open) dialog.showModal(); }, 0);
 }
 
-async function load(): Promise<void> { snapshot = normalizeSnapshot(await api<unknown>("/api/registry")); render(); }
+async function load(): Promise<void> {
+  const [registry, signals] = await Promise.all([
+    api<unknown>("/api/registry"),
+    api<unknown>("/api/raw-signals"),
+  ]);
+  snapshot = normalizeSnapshot(registry);
+  rawSignals = safeArray<RawSignal>(signals);
+  render();
+}
 async function reloadInspector(): Promise<void> {
   await load();
   const source = snapshotSources().find((item) => item.id === currentInspectorId);
@@ -558,6 +640,21 @@ sourceList.addEventListener("change", async (event) => {
 
 Object.values(filters).forEach((element) => element.addEventListener("input", render));
 Object.values(coverageFilters).forEach((element) => element.addEventListener("input", renderCoverage));
+Object.values(rawSignalFilters).forEach((element) => element.addEventListener("input", renderRawSignals));
+$("#rawSignalList").addEventListener("click", async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-raw-signal-action]");
+  if (!button) return;
+  const id = button.dataset.id ?? "";
+  const status = button.dataset.rawSignalAction as RawSignalStatus;
+  try {
+    const updated = await api<RawSignal>(`/api/raw-signals/${encodeURIComponent(id)}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+    rawSignals = rawSignals.map((item) => item.id === updated.id ? updated : item);
+    renderRawSignals();
+    toast(`Raw signal marked ${status}`);
+  } catch (error) {
+    toast(error instanceof Error ? error.message : String(error));
+  }
+});
 $("#coverageTable").addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
   const sortButton = target.closest<HTMLButtonElement>("button[data-coverage-sort]");

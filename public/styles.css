@@ -28,6 +28,23 @@ h1 { margin: 0; font-size: 44px; line-height: 1; letter-spacing: -.04em; }
 main { padding: 24px 52px 64px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
 .coverage-panel { margin-bottom: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.raw-signals-panel { margin-bottom: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--panel) 92%, #162214); }
+.stats.compact { grid-template-columns: repeat(5, 1fr); margin: 14px 0; }
+.stats.compact .stat { padding: 12px; }
+.stats.compact .stat strong { font-size: 22px; }
+.raw-signal-filters { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+.raw-signal-list { display: grid; gap: 10px; max-height: 680px; overflow: auto; padding-right: 4px; }
+.raw-signal-card { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 13px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #0f1212; }
+.raw-signal-media { display: grid; place-items: center; width: 132px; height: 92px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #090b0b; color: var(--muted); text-decoration: none; font-size: 11px; }
+.raw-signal-media img { width: 100%; height: 100%; object-fit: cover; }
+.raw-signal-media.empty { color: #4e5552; }
+.raw-signal-media.video { border-color: color-mix(in srgb, var(--amber) 35%, var(--line)); color: var(--amber); }
+.raw-signal-body { min-width: 0; }
+.raw-signal-body h3 { margin: 5px 0 5px; overflow: hidden; color: var(--text); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.raw-signal-body p { display: -webkit-box; overflow: hidden; margin: 0 0 9px; color: var(--muted); font-size: 11px; line-height: 1.45; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.raw-signal-meta { display: flex; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 10px; }
+.raw-signal-meta span { padding: 3px 6px; border-radius: 999px; background: #171b1a; }
+.raw-signal-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .coverage-heading { display: flex; justify-content: space-between; align-items: end; }
 .coverage-heading h2 { margin: 0; font-size: 20px; }
 .coverage-heading > span { color: var(--muted); font-size: 11px; }

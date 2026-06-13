@@ -14,7 +14,9 @@ import { discoverFollowupSources } from "./services/source-followup.ts";
 import { addProductSource, deleteProductSource, reorderProductSources, updateProductSource } from "./services/product-source-manager.ts";
 import { JsonSourceCandidateRepository, sourceCandidateKey } from "./repositories/source-candidate-repository.ts";
 import { acceptSourceCandidate, rejectSourceCandidate } from "./services/source-candidates.ts";
-import type { SourceCandidate } from "./types/source.ts";
+import { readRawSignals, updateRawSignalStatus } from "./repositories/raw-signal-repository.ts";
+import { isAllowedRawSignalTransition } from "./services/raw-signal-review.ts";
+import { RAW_SIGNAL_STATUSES, type RawSignalStatus, type SourceCandidate } from "./types/source.ts";
 
 const sources = new JsonSourceRepository();
 const metadata = new JsonRegistryMetadataRepository();
@@ -122,6 +124,25 @@ async function handleApi(request: IncomingMessage, response: ServerResponse, url
   if (request.method === "POST" && url.pathname === "/api/scan") {
     const health = await scanSources(sources, metadata);
     sendJson(response, 200, { health });
+    return true;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/raw-signals") {
+    sendJson(response, 200, await readRawSignals());
+    return true;
+  }
+
+  const rawSignalStatusMatch = url.pathname.match(/^\/api\/raw-signals\/([^/]+)\/status$/);
+  if (rawSignalStatusMatch?.[1] && request.method === "PUT") {
+    const id = decodeURIComponent(rawSignalStatusMatch[1]);
+    const body = (await readBody(request)) as { status?: RawSignalStatus };
+    if (!body.status || !RAW_SIGNAL_STATUSES.includes(body.status)) throw new Error("Invalid raw signal status");
+    const existing = (await readRawSignals()).find((item) => item.id === id);
+    if (!existing) throw new Error("Raw signal not found");
+    if (!isAllowedRawSignalTransition(existing.status, body.status)) {
+      throw new Error(`Invalid raw signal status transition: ${existing.status} -> ${body.status}`);
+    }
+    sendJson(response, 200, await updateRawSignalStatus(id, body.status));
     return true;
   }
 

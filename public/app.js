@@ -109,6 +109,7 @@ let snapshot = {
     recommendations: {},
     coverage: []
 };
+let rawSignals = [];
 let currentInspectorId = "";
 let addingFormalSource = false;
 let coverageSort = {
@@ -300,6 +301,11 @@ const coverageFilters = {
     missingGithub: $("#coverageMissingGithub"),
     missingX: $("#coverageMissingX"),
     needsReview: $("#coverageNeedsReview")
+};
+const rawSignalFilters = {
+    product: $("#rawSignalProductFilter"),
+    type: $("#rawSignalTypeFilter"),
+    status: $("#rawSignalStatusFilter")
 };
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>'"]/g, (char)=>({
@@ -635,6 +641,91 @@ function renderCoverage() {
         return `<div class="coverage-row"><span><button type="button" class="coverage-product" data-coverage-inspect="${escapeHtml(productKey)}"><strong>${escapeHtml(item.product_name)}</strong></button></span><span>${item.identity_sources}</span><span>${item.updates_sources}</span><span title="Eligible types: ${communityTypes}">${item.community_sources}</span><span>${item.discovery_sources}</span><span>${item.media_sources}</span><span>${item.x_sources}</span><span>${item.github_sources}</span><span class="${item.missing_identity_source ? "coverage-warning" : ""}">${item.missing_identity_source ? "WARNING" : "—"}</span><span class="${item.missing_updates_source ? "coverage-warning" : ""}">${item.missing_updates_source ? "WARNING" : "—"}</span><span class="${item.missing_media_source ? "coverage-warning" : ""}">${item.missing_media_source ? "WARNING" : "—"}</span><span>${item.needs_review_count}</span><span class="coverage-score">${item.coverage_score}/5</span><span><button type="button" class="mini-button coverage-action" data-coverage-inspect="${escapeHtml(productKey)}">Inspect</button></span></div>`;
     }).join("");
 }
+function rawSignalActions(signal) {
+    const actions = {
+        discovered: [
+            "approved",
+            "rejected"
+        ],
+        approved: [
+            "archived"
+        ]
+    };
+    return (actions[signal.status] ?? []).map((status)=>`<button class="mini-button" data-raw-signal-action="${status}" data-id="${escapeHtml(signal.id)}">${status}</button>`).join("");
+}
+function mediaPreview(signal) {
+    const mediaUrl = safeArray(signal.media_urls)[0];
+    if (!mediaUrl) return `<div class="raw-signal-media empty">No media</div>`;
+    const type = safeArray(signal.media_types)[0] ?? "";
+    if (type === "video" || /\.(?:mp4|webm|mov)(?:$|[?#])/i.test(mediaUrl)) {
+        return `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>`;
+    }
+    return `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>`;
+}
+function fillRawSignalFilters() {
+    const current = {
+        product: rawSignalFilters.product.value,
+        type: rawSignalFilters.type.value,
+        status: rawSignalFilters.status.value
+    };
+    const optionList = (values)=>`<option value="">All</option>${values.map((value)=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+    rawSignalFilters.product.innerHTML = optionList([
+        ...new Set(rawSignals.map((item)=>item.product).filter(Boolean))
+    ].sort());
+    rawSignalFilters.type.innerHTML = optionList([
+        ...new Set(rawSignals.map((item)=>item.source_type).filter(Boolean))
+    ].sort());
+    rawSignalFilters.status.innerHTML = optionList([
+        "discovered",
+        "pending_review",
+        "approved",
+        "rejected",
+        "archived"
+    ]);
+    rawSignalFilters.product.value = current.product;
+    rawSignalFilters.type.value = current.type;
+    rawSignalFilters.status.value = current.status;
+}
+function visibleRawSignals() {
+    return safeArray(rawSignals).filter((signal)=>(!rawSignalFilters.product.value || signal.product === rawSignalFilters.product.value) && (!rawSignalFilters.type.value || signal.source_type === rawSignalFilters.type.value) && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value));
+}
+function renderRawSignals() {
+    fillRawSignalFilters();
+    const visible = visibleRawSignals();
+    const all = safeArray(rawSignals);
+    $("#rawSignalCount").textContent = `${visible.length} / ${all.length} signals`;
+    $("#rawSignalStats").innerHTML = [
+        [
+            all.length,
+            "Total Signals"
+        ],
+        [
+            all.filter((item)=>item.status === "approved").length,
+            "Approved"
+        ],
+        [
+            all.filter((item)=>item.status === "rejected").length,
+            "Rejected"
+        ],
+        [
+            all.filter((item)=>item.status === "archived").length,
+            "Archived"
+        ],
+        [
+            all.filter((item)=>safeArray(item.media_urls).length > 0).length,
+            "With Media"
+        ]
+    ].map(([value, label])=>`<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+    $("#rawSignalList").innerHTML = visible.length ? visible.map((signal)=>`<article class="raw-signal-card">
+    ${mediaPreview(signal)}
+    <div class="raw-signal-body">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span class="review-status ${escapeHtml(signal.status)}">${escapeHtml(signal.status)}</span></div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+      <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 220))}</p>
+      <div class="raw-signal-actions"><a class="mini-button" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>${rawSignalActions(signal)}</div>
+    </div>
+  </article>`).join("") : `<div class="empty-state">No raw signals match the current filters.</div>`;
+}
 function renderUrlCell(source, type, label, field) {
     const url = String(source[field] ?? "");
     if (!url) return `<div class="url-cell"><div class="url-head"><span class="url-type">${label}</span></div><div class="empty-url">未配置 URL</div></div>`;
@@ -701,6 +792,7 @@ function render() {
     </div>
     <div class="url-grid">${sourceTypes.map(({ type, label, field })=>renderUrlCell(source, type, label, field)).join("")}</div>
   </article>`).join("") : `<div class="empty-state">没有符合当前筛选条件的 Source。</div>`;
+    renderRawSignals();
     renderCoverage();
 }
 function fillSelects() {
@@ -786,7 +878,12 @@ function openForm(source) {
     }, 0);
 }
 async function load() {
-    snapshot = normalizeSnapshot(await api("/api/registry"));
+    const [registry, signals] = await Promise.all([
+        api("/api/registry"),
+        api("/api/raw-signals")
+    ]);
+    snapshot = normalizeSnapshot(registry);
+    rawSignals = safeArray(signals);
     render();
 }
 async function reloadInspector() {
@@ -865,6 +962,26 @@ sourceList.addEventListener("change", async (event)=>{
 });
 Object.values(filters).forEach((element)=>element.addEventListener("input", render));
 Object.values(coverageFilters).forEach((element)=>element.addEventListener("input", renderCoverage));
+Object.values(rawSignalFilters).forEach((element)=>element.addEventListener("input", renderRawSignals));
+$("#rawSignalList").addEventListener("click", async (event)=>{
+    const button = event.target.closest("button[data-raw-signal-action]");
+    if (!button) return;
+    const id = button.dataset.id ?? "";
+    const status = button.dataset.rawSignalAction;
+    try {
+        const updated = await api(`/api/raw-signals/${encodeURIComponent(id)}/status`, {
+            method: "PUT",
+            body: JSON.stringify({
+                status
+            })
+        });
+        rawSignals = rawSignals.map((item)=>item.id === updated.id ? updated : item);
+        renderRawSignals();
+        toast(`Raw signal marked ${status}`);
+    } catch (error) {
+        toast(error instanceof Error ? error.message : String(error));
+    }
+});
 $("#coverageTable").addEventListener("click", (event)=>{
     const target = event.target;
     const sortButton = target.closest("button[data-coverage-sort]");
