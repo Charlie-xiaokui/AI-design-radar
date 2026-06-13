@@ -1,0 +1,27 @@
+{
+  "name": "ai-design-radar-source-registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:client": "node --experimental-strip-types src/scripts/build-client.ts",
+    "dev": "npm run build:client && node --watch --experimental-strip-types src/server.ts",
+    "start": "npm run build:client && node --experimental-strip-types src/server.ts",
+    "scan-sources": "node --experimental-strip-types src/scripts/scan-sources.ts",
+    "audit-sources": "node --experimental-strip-types src/scripts/audit-sources.ts",
+    "generate:audit-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",
+    "generate:batch-candidates": "node --experimental-strip-types src/scripts/generate-audit-candidates.ts",
+    "generate:registry-diagnostics": "node --experimental-strip-types src/scripts/generate-registry-diagnostics.ts",
+    "generate:source-coverage": "node --experimental-strip-types src/scripts/generate-source-coverage.ts",
+    "generate:coverage-score-v2": "node --experimental-strip-types src/scripts/generate-coverage-score-v2.ts",
+    "discover:source-followups": "node --experimental-strip-types src/scripts/discover-source-followups.ts",
+    "audit:claude-media-discovery": "node --experimental-strip-types src/scripts/audit-claude-media-discovery.ts",
+    "suggest:sources": "node --experimental-strip-types src/scripts/suggest-sources.ts",
+    "test:source-auditor": "node --experimental-strip-types src/scripts/test-source-auditor.ts",
+    "test:source-network": "node --experimental-strip-types src/scripts/test-source-network.ts",
+    "test:source-candidates": "node --experimental-strip-types src/scripts/test-source-candidates.ts",
+    "test:inspector-navigation": "node --experimental-strip-types src/scripts/test-inspector-navigation.ts",
+    "generate:source-review": "node --experimental-strip-types src/scripts/generate-source-review.ts",
+    "typecheck": "node --experimental-strip-types src/scripts/check-typescript.ts"
+  }
+}

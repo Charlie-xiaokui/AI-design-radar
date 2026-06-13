@@ -1,0 +1,29 @@
+[
+  {
+    "product": "Manus",
+    "url": "https://events.manus.im/",
+    "type": "events",
+    "purpose": "community",
+    "priority": "P3",
+    "source": "manus_coverage_v3.md",
+    "status": "rejected"
+  },
+  {
+    "product": "Lovable",
+    "url": "https://discord.gg/lovable-dev",
+    "type": "discord",
+    "purpose": "community",
+    "priority": "P3",
+    "source": "batch_source_candidates.md",
+    "status": "rejected"
+  },
+  {
+    "product": "Linear",
+    "url": "https://linear.app/community",
+    "type": "community",
+    "purpose": "community",
+    "priority": "P3",
+    "source": "batch_source_candidates.md",
+    "status": "rejected"
+  }
+]

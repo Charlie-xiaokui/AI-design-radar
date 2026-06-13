@@ -1,0 +1,233 @@
+[
+  {
+    "product_name": "Claude",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 1,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 2,
+    "activity_score": 1,
+    "collector_priority": "low"
+  },
+  {
+    "product_name": "Cursor",
+    "updates_30d": 4,
+    "latest_update_at": "2026-06-05T00:00:00.000Z",
+    "screenshot_count": 67,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 5,
+    "activity_score": 3,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Perplexity",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 6,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 3,
+    "activity_score": 1,
+    "collector_priority": "low"
+  },
+  {
+    "product_name": "v0",
+    "updates_30d": 3,
+    "latest_update_at": "2026-06-08T00:00:00.000Z",
+    "screenshot_count": 150,
+    "gif_count": 0,
+    "video_count": 70,
+    "media_score": 5,
+    "activity_score": 3,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Lovable",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 15,
+    "gif_count": 0,
+    "video_count": 3,
+    "media_score": 5,
+    "activity_score": 1,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "Bolt",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 32,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 5,
+    "activity_score": 1,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "Manus",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 2,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 2,
+    "activity_score": 1,
+    "collector_priority": "low"
+  },
+  {
+    "product_name": "Replit",
+    "updates_30d": 0,
+    "latest_update_at": "",
+    "screenshot_count": 24,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 5,
+    "activity_score": 1,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "OpenAI",
+    "updates_30d": 46,
+    "latest_update_at": "2026-06-09T12:00:00.000Z",
+    "screenshot_count": 2,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 2,
+    "activity_score": 5,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "Figma AI",
+    "updates_30d": 14,
+    "latest_update_at": "2026-06-04T00:00:00.000Z",
+    "screenshot_count": 60,
+    "gif_count": 0,
+    "video_count": 3,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Notion AI",
+    "updates_30d": 30,
+    "latest_update_at": "2026-05-27T13:33:41.136Z",
+    "screenshot_count": 59,
+    "gif_count": 18,
+    "video_count": 18,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Linear",
+    "updates_30d": 64,
+    "latest_update_at": "2026-06-09T23:11:21.000Z",
+    "screenshot_count": 57,
+    "gif_count": 0,
+    "video_count": 10,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "OpenHands",
+    "updates_30d": 10,
+    "latest_update_at": "2026-06-04T20:32:56.000Z",
+    "screenshot_count": 182,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 5,
+    "activity_score": 4,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Cline",
+    "updates_30d": 57,
+    "latest_update_at": "2026-06-10T00:52:44.000Z",
+    "screenshot_count": 53,
+    "gif_count": 0,
+    "video_count": 1,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Continue",
+    "updates_30d": 0,
+    "latest_update_at": "2026-03-27T21:38:24.000Z",
+    "screenshot_count": 44,
+    "gif_count": 0,
+    "video_count": 2,
+    "media_score": 5,
+    "activity_score": 1,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "Flowise",
+    "updates_30d": 0,
+    "latest_update_at": "2026-04-14T13:58:32.000Z",
+    "screenshot_count": 105,
+    "gif_count": 20,
+    "video_count": 54,
+    "media_score": 5,
+    "activity_score": 1,
+    "collector_priority": "medium"
+  },
+  {
+    "product_name": "Dify",
+    "updates_30d": 11,
+    "latest_update_at": "2026-05-26T06:25:46.000Z",
+    "screenshot_count": 640,
+    "gif_count": 0,
+    "video_count": 65,
+    "media_score": 5,
+    "activity_score": 4,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "n8n",
+    "updates_30d": 83,
+    "latest_update_at": "2026-06-09T15:54:33.000Z",
+    "screenshot_count": 141,
+    "gif_count": 0,
+    "video_count": 9,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Langflow",
+    "updates_30d": 20,
+    "latest_update_at": "2026-06-10T01:10:16.000Z",
+    "screenshot_count": 114,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "ComfyUI",
+    "updates_30d": 19,
+    "latest_update_at": "2026-06-04T18:07:31.000Z",
+    "screenshot_count": 227,
+    "gif_count": 0,
+    "video_count": 7,
+    "media_score": 5,
+    "activity_score": 5,
+    "collector_priority": "high"
+  },
+  {
+    "product_name": "Supabase AI",
+    "updates_30d": 9,
+    "latest_update_at": "2026-06-06T06:00:08.000Z",
+    "screenshot_count": 16,
+    "gif_count": 0,
+    "video_count": 0,
+    "media_score": 4,
+    "activity_score": 4,
+    "collector_priority": "high"
+  }
+]

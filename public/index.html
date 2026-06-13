@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Source Registry | AI Design Radar</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">AI DESIGN RADAR</p>
+        <h1>Source Registry</h1>
+        <p class="subtitle">维护信源，检查链接，把值得追踪的设计变化留在雷达上。</p>
+      </div>
+      <div class="header-actions">
+        <button class="button secondary" id="importButton">导入 JSON</button>
+        <a class="button secondary" href="/api/sources/export">导出 JSON</a>
+        <button class="button secondary" id="scanButton">运行巡检</button>
+        <button class="button primary" id="addButton">新增 Source</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </div>
+    </header>
+
+    <main>
+      <section class="stats" id="stats"></section>
+      <section class="coverage-panel">
+        <div class="coverage-heading"><div><p class="eyebrow">SOURCE COVERAGE</p><h2>Coverage Dashboard</h2></div><span id="coverageCount"></span></div>
+        <div class="coverage-filters">
+          <label class="review-filter"><input id="coverageLowFilter" type="checkbox" /> Score &lt; 5</label>
+          <label class="review-filter"><input id="coverageMissingUpdates" type="checkbox" /> Missing Updates</label>
+          <label class="review-filter"><input id="coverageMissingMedia" type="checkbox" /> Missing Media</label>
+          <label class="review-filter"><input id="coverageMissingCommunity" type="checkbox" /> Missing Community</label>
+          <label class="review-filter"><input id="coverageMissingDiscovery" type="checkbox" /> Missing Discovery</label>
+          <label class="review-filter"><input id="coverageMissingGithub" type="checkbox" /> Missing GitHub</label>
+          <label class="review-filter"><input id="coverageMissingX" type="checkbox" /> Missing X</label>
+          <label class="review-filter"><input id="coverageNeedsReview" type="checkbox" /> Needs Review</label>
+        </div>
+        <div class="coverage-table" id="coverageTable"></div>
+      </section>
+      <section class="toolbar">
+        <label class="search-wrap">
+          <span>搜索</span>
+          <input id="searchInput" type="search" placeholder="产品名或 slug" />
+        </label>
+        <label>分类<select id="categoryFilter"><option value="">全部</option></select></label>
+        <label>状态<select id="statusFilter"><option value="">全部</option></select></label>
+        <label>频率<select id="frequencyFilter"><option value="">全部</option></select></label>
+        <label>审核状态<select id="reviewStatusFilter"><option value="">全部</option></select></label>
+        <label>媒体分<select id="mediaScoreFilter"><option value="">全部</option></select></label>
+        <label>信号分<select id="signalScoreFilter"><option value="">全部</option></select></label>
+        <label>设计模式<input id="patternFilter" placeholder="例如 Agent Workflow" /></label>
+        <label class="review-filter"><input id="updatesZeroFilter" type="checkbox" /> 30 天更新 = 0</label>
+        <label class="review-filter"><input id="auditMediaFilter" type="checkbox" /> Audit 媒体分 ≥ 4</label>
+        <label>采集优先级<select id="collectorPriorityFilter"><option value="">全部</option><option value="medium_low">Medium / Low</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+        <label class="review-filter"><input id="hasErrorFilter" type="checkbox" /> 有错误</label>
+        <label class="review-filter"><input id="pendingFilter" type="checkbox" /> 待人工校对</label>
+      </section>
+      <section class="result-line"><span id="resultCount"></span><span id="lastScan"></span></section>
+      <section class="source-list" id="sourceList"></section>
+    </main>
+
+    <dialog id="sourceDialog">
+      <form id="sourceForm" method="dialog">
+        <div class="dialog-title"><div><p class="eyebrow">REGISTRY ENTRY</p><h2 id="dialogHeading">新增 Source</h2></div><button class="icon-button" id="closeSourceDialog" type="button" aria-label="关闭新增 Source">×</button></div>
+        <input type="hidden" name="id" />
+        <div class="form-grid">
+          <label>产品名<input name="product_name" required /></label>
+          <label>Slug<input name="slug" placeholder="自动生成" /></label>
+          <label>分类<select name="category" required></select></label>
+          <label>设计模式<input name="design_pattern" /></label>
+          <label>审核状态<select name="review_status"></select></label>
+          <label>GitHub 类型<select name="github_type"></select></label>
+          <label>媒体分<select name="media_score"></select></label>
+          <label>信号分<select name="signal_score"></select></label>
+          <label class="span-2">信源类型<input name="source_types" placeholder="github, changelog, docs, x, rss" /></label>
+          <label class="span-2">Homepage URL<input name="homepage_url" type="url" /></label>
+          <label class="span-2">GitHub URL<input name="github_url" type="url" /></label>
+          <label class="span-2">GitHub Releases URL<input name="github_releases_url" type="url" /></label>
+          <label class="span-2">Changelog URL<input name="changelog_url" type="url" /></label>
+          <label class="span-2">Docs URL<input name="docs_url" type="url" /></label>
+          <label class="span-2">Product Hunt URL<input name="product_hunt_url" type="url" /></label>
+          <label class="span-2">X URL<input name="x_url" type="url" /></label>
+          <label class="span-2">RSS URL<input name="rss_url" type="url" /></label>
+          <label class="span-2">News URL<input name="news_url" type="url" /></label>
+          <label class="span-2">Videos URL<input name="videos_url" type="url" /></label>
+          <label class="span-2">Blog URL<input name="blog_url" type="url" /></label>
+          <label class="span-2">Release Notes URL<input name="release_notes_url" type="url" /></label>
+          <label class="span-2">Official News URL<input name="anthropic_news_url" type="url" /></label>
+          <label class="span-2">Claude Code GitHub URL<input name="claude_code_github_url" type="url" /></label>
+          <label class="span-2">Claude Code Releases URL<input name="claude_code_releases_url" type="url" /></label>
+          <label class="span-2">Claude Code RSS URL<input name="claude_code_rss_url" type="url" /></label>
+          <label>信源价值<select name="source_priority"></select></label>
+          <label>媒体概率<select name="media_likelihood"></select></label>
+          <label>巡检频率<select name="scan_frequency"></select></label>
+          <label>状态<select name="status"></select></label>
+          <label class="span-2">备注<textarea name="notes" rows="3"></textarea></label>
+        </div>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">取消</button><button class="button primary" id="saveButton" value="default">保存</button></div>
+      </form>
+    </dialog>
+    <dialog id="inspectorDialog" class="inspector-dialog">
+      <div class="inspector-shell">
+        <header class="inspector-header">
+          <div><p class="eyebrow">SOURCE INSPECTOR</p><h2 id="inspectorTitle">信号源详情</h2><p id="inspectorSubtitle"></p></div>
+          <div class="inspector-navigation"><button class="button secondary" id="previousProduct">Previous Product</button><button class="button secondary" id="nextProduct">Next Product</button><button class="button secondary" id="discoverFollowups">发现媒体候选</button></div>
+          <button class="icon-button" id="closeInspector" type="button" aria-label="关闭 Inspector">×</button>
+        </header>
+        <section id="inspectorSummary" class="inspector-summary"></section>
+        <section class="formal-source-section">
+          <div class="formal-source-heading"><h3>Formal Sources</h3><button class="mini-button" id="addFormalSource">+ Add Source</button></div>
+          <div id="formalSourceEditor"></div>
+        </section>
+        <p class="scope-note">每行显示 Source Network v2 的 source 运行态；顶部卡片仍是产品级 source_audit.json 汇总。</p>
+        <section id="inspectorSources" class="inspector-sources"></section>
+        <section id="inspectorRecommendations" class="inspector-recommendations"></section>
+      </div>
+    </dialog>
+    <dialog id="confirmDialog" class="confirm-dialog">
+      <div class="confirm-shell">
+        <h2>确认删除</h2>
+        <p id="confirmMessage"></p>
+        <div class="dialog-actions">
+          <button class="button secondary" id="cancelConfirm" type="button">取消</button>
+          <button class="button danger" id="acceptConfirm" type="button">确认删除</button>
+        </div>
+      </div>
+    </dialog>
+    <div id="toast" role="status"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+[
+  {
+    "id": "chat-workspace",
+    "name": "Chat + Workspace",
+    "description": "A conversational interface paired with a persistent working area where AI-generated documents, code, visual outputs, or other artifacts can be viewed and refined without leaving the conversation.",
+    "examples": [
+      "Claude Artifacts"
+    ],
+    "keywords": [
+      "chat",
+      "workspace",
+      "artifacts",
+      "persistent output",
+      "side panel",
+      "document editing",
+      "live preview"
+    ]
+  },
+  {
+    "id": "chat-canvas",
+    "name": "Chat + Canvas",
+    "description": "A conversational prompt surface connected to a visual canvas or preview area where users can inspect, select, and iteratively modify generated interfaces or content.",
+    "examples": [
+      "v0",
+      "Lovable",
+      "Bolt"
+    ],
+    "keywords": [
+      "chat",
+      "canvas",
+      "visual editing",
+      "live preview",
+      "iteration",
+      "selection",
+      "generated UI"
+    ]
+  },
+  {
+    "id": "agent-workflow",
+    "name": "Agent Workflow",
+    "description": "An interface that exposes an autonomous agent's plan, tool use, intermediate steps, execution state, and results as a traceable multi-step workflow.",
+    "examples": [
+      "Manus",
+      "OpenHands"
+    ],
+    "keywords": [
+      "agent",
+      "workflow",
+      "task execution",
+      "planning",
+      "tool use",
+      "progress",
+      "activity log",
+      "autonomy"
+    ]
+  },
+  {
+    "id": "multi-panel-ide",
+    "name": "Multi Panel IDE",
+    "description": "An AI-native development environment that coordinates chat, code editing, file navigation, terminal output, diffs, previews, and agent activity across multiple persistent panels.",
+    "examples": [
+      "Cursor",
+      "Windsurf"
+    ],
+    "keywords": [
+      "IDE",
+      "multi panel",
+      "code editor",
+      "terminal",
+      "file tree",
+      "diff",
+      "coding agent",
+      "developer tools"
+    ]
+  },
+  {
+    "id": "visual-workflow-builder",
+    "name": "Visual Workflow Builder",
+    "description": "A node-based or block-based canvas for assembling AI models, tools, data sources, conditions, and actions into an inspectable executable workflow.",
+    "examples": [
+      "Dify",
+      "Flowise",
+      "n8n",
+      "Langflow"
+    ],
+    "keywords": [
+      "visual workflow",
+      "node editor",
+      "flow builder",
+      "automation",
+      "connections",
+      "pipeline",
+      "orchestration",
+      "no-code"
+    ]
+  },
+  {
+    "id": "prompt-to-app",
+    "name": "Prompt → App",
+    "description": "A product flow that transforms a natural-language request into a runnable application, then supports iterative refinement through prompts, visual previews, or direct code changes.",
+    "examples": [
+      "Lovable",
+      "Bolt",
+      "v0"
+    ],
+    "keywords": [
+      "prompt to app",
+      "app generation",
+      "natural language",
+      "code generation",
+      "live preview",
+      "deployment",
+      "iteration",
+      "full stack"
+    ]
+  },
+  {
+    "id": "ai-research-workspace",
+    "name": "AI Research Workspace",
+    "description": "A research-oriented interface that combines conversational querying, web or document retrieval, citations, source inspection, synthesis, and saved research context in one workspace.",
+    "examples": [
+      "Perplexity"
+    ],
+    "keywords": [
+      "research",
+      "search",
+      "citations",
+      "sources",
+      "retrieval",
+      "synthesis",
+      "answer engine",
+      "knowledge workspace"
+    ]
+  }
+]
