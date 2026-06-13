@@ -22,6 +22,10 @@ export interface SignalAuditReport {
   top_20_shortest_signals: SignalAuditItem[];
   signals_with_media: number;
   signals_without_media: number;
+  signals_with_screenshots: number;
+  signals_with_video: number;
+  signals_with_gif: number;
+  homepage_qualified_visual_signals: number;
   signals_missing_published_at: number;
 }
 
@@ -52,6 +56,10 @@ export async function auditRawSignals(
     top_20_shortest_signals: [...items].sort((a, b) => a.raw_text_length - b.raw_text_length).slice(0, 20),
     signals_with_media: signals.filter((signal) => signal.media_urls.length > 0).length,
     signals_without_media: signals.filter((signal) => signal.media_urls.length === 0).length,
+    signals_with_screenshots: signals.filter((signal) => signal.image_count > 0).length,
+    signals_with_video: signals.filter((signal) => signal.video_count > 0).length,
+    signals_with_gif: signals.filter((signal) => signal.gif_count > 0).length,
+    homepage_qualified_visual_signals: signals.filter((signal) => signal.status === "approved" && signal.homepage_candidate === true && signal.homepage_score >= 3 && signal.has_visual_signal).length,
     signals_missing_published_at: signals.filter((signal) => !signal.published_at).length,
   };
   await writeJsonFile(reportFile, report);

@@ -14,6 +14,7 @@
         <p class="subtitle">维护信源，检查链接，把值得追踪的设计变化留在雷达上。</p>
       </div>
       <div class="header-actions">
+        <a class="button secondary" href="/radar">Design Radar</a>
         <button class="button secondary" id="importButton">导入 JSON</button>
         <a class="button secondary" href="/api/sources/export">导出 JSON</a>
         <button class="button secondary" id="scanButton">运行巡检</button>
@@ -31,6 +32,7 @@
           <label>Product<select id="rawSignalProductFilter"><option value="">All</option></select></label>
           <label>Source Type<select id="rawSignalTypeFilter"><option value="">All</option></select></label>
           <label>Status<select id="rawSignalStatusFilter"><option value="">All</option></select></label>
+          <label class="review-filter"><input id="rawSignalVisualFilter" type="checkbox" /> 只看视觉信号</label>
         </div>
         <div class="raw-signal-list" id="rawSignalList"></div>
       </section>

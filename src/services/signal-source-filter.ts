@@ -12,6 +12,7 @@ export const SIGNAL_COLLECTOR_SOURCE_TYPES = [
   "docs",
   "youtube",
   "product_hunt",
+  "rss",
 ] as const;
 
 export type SignalCollectorSourceType = (typeof SIGNAL_COLLECTOR_SOURCE_TYPES)[number];

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Design Radar | 首页灵感</title>
+    <link rel="stylesheet" href="/radar.css" />
+  </head>
+  <body>
+    <header class="radar-hero">
+      <nav class="radar-nav">
+        <a class="brand" href="/radar">AI Design Radar</a>
+        <a class="admin-link" href="/">信源后台</a>
+      </nav>
+      <div class="hero-copy">
+        <p class="eyebrow">设计雷达 MVP</p>
+        <h1>值得研究的 AI 产品体验变化。</h1>
+        <p>只展示已审核通过的 AI 产品设计 / UX / 工作流灵感，优先呈现真实产品界面与可复用交互模式。</p>
+      </div>
+      <section class="radar-metrics" id="radarMetrics"></section>
+      <div class="radar-filters" id="radarFilters"></div>
+    </header>
+
+    <main class="radar-shell">
+      <section class="radar-grid" id="radarGrid"></section>
+    </main>
+
+    <dialog id="radarDetailDialog" class="radar-dialog">
+      <article class="radar-detail">
+        <button class="close-detail" id="closeRadarDetail" type="button" aria-label="关闭详情">×</button>
+        <div id="radarDetailContent"></div>
+      </article>
+    </dialog>
+
+    <div id="radarToast" role="status"></div>
+    <script type="module" src="/radar.js"></script>
+  </body>
+</html>

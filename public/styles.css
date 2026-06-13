@@ -34,7 +34,7 @@ main { padding: 24px 52px 64px; }
 .stats.compact { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin: 14px 0; }
 .stats.compact .stat { padding: 12px; }
 .stats.compact .stat strong { font-size: 22px; }
-.raw-signal-filters { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+.raw-signal-filters { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 10px; margin: 12px 0 14px; }
 .raw-signal-list { display: grid; gap: 10px; max-height: 680px; overflow: auto; padding-right: 4px; }
 .raw-signal-card { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 13px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #0f1212; }
 .raw-signal-media { display: grid; place-items: center; width: 132px; height: 92px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #090b0b; color: var(--muted); text-decoration: none; font-size: 11px; }
@@ -65,6 +65,15 @@ main { padding: 24px 52px 64px; }
 .homepage-review-controls label { min-width: 0; }
 .homepage-review-controls input, .homepage-review-controls select, .homepage-review-controls textarea { font-size: 11px; }
 .homepage-review-controls .check-label { height: 38px; }
+.homepage-score-breakdown { grid-column: span 2; display: grid; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: #0b0e0d; }
+.homepage-score-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.homepage-score-head strong { color: var(--accent-2); font-size: 12px; }
+.homepage-recommendation { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 999px; font-size: 10px; font-weight: 800; }
+.homepage-recommendation.recommended { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #0b0e0d); }
+.homepage-recommendation.not_recommended { border: 1px solid color-mix(in srgb, var(--red) 45%, var(--line)); color: var(--red); background: color-mix(in srgb, var(--red) 8%, #0b0e0d); }
+.homepage-criterion { display: grid; grid-template-columns: 16px minmax(0, 1fr) 18px; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+.homepage-criterion input { width: 14px; height: 14px; margin: 0; }
+.homepage-criterion strong { color: var(--accent-2); text-align: right; }
 .homepage-reasons { grid-column: span 2; }
 .homepage-review-controls button { grid-column: span 2; }
 .coverage-heading { display: flex; justify-content: space-between; align-items: end; }

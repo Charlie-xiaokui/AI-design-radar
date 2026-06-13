@@ -283,7 +283,7 @@ async function handleApi(request: IncomingMessage, response: ServerResponse, url
 }
 
 async function serveStatic(response: ServerResponse, pathname: string): Promise<void> {
-  const requested = pathname === "/" ? "index.html" : pathname.replace(/^\//, "");
+  const requested = pathname === "/" ? "index.html" : pathname === "/radar" ? "radar.html" : pathname.replace(/^\//, "");
   const filePath = path.resolve(config.publicDir, requested);
   if (!filePath.startsWith(`${config.publicDir}${path.sep}`)) {
     response.writeHead(403).end("Forbidden");

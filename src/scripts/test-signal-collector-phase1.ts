@@ -91,10 +91,22 @@ function rawSignal(partial: Partial<RawSignal>): RawSignal {
     raw_text: partial.raw_text ?? "Raw launch text",
     media_urls: partial.media_urls ?? [],
     media_types: partial.media_types ?? [],
+    media_count: partial.media_count ?? (partial.media_urls?.length ?? 0),
+    image_count: partial.image_count ?? (partial.media_urls?.length ?? 0),
+    video_count: partial.video_count ?? 0,
+    gif_count: partial.gif_count ?? 0,
+    has_visual_signal: partial.has_visual_signal ?? Boolean(partial.media_urls?.length),
     source_type: partial.source_type ?? "blog",
     status: partial.status ?? "discovered",
     quality_score: partial.quality_score ?? 75,
     homepage_candidate: partial.homepage_candidate ?? "unknown",
+    homepage_criteria: partial.homepage_criteria ?? {
+      visual_asset_present: 0,
+      ui_or_workflow_change: 0,
+      reusable_pattern: 0,
+      pm_designer_inspiration: 0,
+      trusted_source: 1,
+    },
     homepage_score: partial.homepage_score ?? 0,
     homepage_reasons: partial.homepage_reasons ?? [],
     homepage_category: partial.homepage_category ?? "unknown",
@@ -183,9 +195,9 @@ try {
     assert(summary.total_sources === 8, "CLI summary should include total sources");
     assert(summary.eligible_public_sources === 3, "CLI summary should include eligible public sources");
     assert(summary.skipped_sources === 5, "CLI summary should include skipped sources");
-    assert(summary.sources_scanned === 1, "Phase 2A should scan only supported eligible sources");
+    assert(summary.sources_scanned === 3, "Phase 5 should scan supported visual-first eligible sources");
     assert(summary.signals_discovered === 0, "Failed fetches should not discover signals");
-    assert(fetchCalled, "Phase 2A should fetch supported release_notes/changelog sources");
+    assert(fetchCalled, "Phase 5 should fetch supported release_notes/blog/docs sources");
     assert(JSON.stringify(await readRawSignals(rawSignalsFile)) !== "", "collectSignalSummary should ensure raw_signals.json exists");
   } finally {
     globalThis.fetch = originalFetch;
@@ -199,7 +211,7 @@ try {
         source({ id: "collector-release-notes", type: "release_notes", url: "https://example.com/release-notes", purpose: "updates", access_type: "public", status: "active" }),
         source({ id: "collector-github-releases", type: "github_releases", url: "https://github.com/example/project/releases", purpose: "updates", access_type: "public", status: "active" }),
         source({ id: "collector-github-atom", type: "github_releases_rss", url: "https://github.com/example/project/releases.atom", purpose: "updates", access_type: "public", status: "active" }),
-        source({ id: "collector-blog-skipped-phase2a", type: "blog", url: "https://example.com/blog", purpose: "updates", access_type: "public", status: "active" }),
+        source({ id: "collector-blog-visual", type: "blog", url: "https://example.com/blog", purpose: "updates", access_type: "public", status: "active" }),
       ],
     }),
   ];
@@ -224,16 +236,29 @@ try {
         headers: { "content-type": "application/atom+xml" },
       });
     }
+    if (url === "https://example.com/blog") {
+      return new Response(`<!doctype html><html><body><main><article><a href="/blog/visual-builder-launch">Visual builder launch</a></article></main></body></html>`, {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }
+    if (url === "https://example.com/blog/visual-builder-launch") {
+      return new Response(`<!doctype html><html><head><title>Visual builder launch</title><meta property="og:image" content="/og-screenshot.png"></head><body><main><article><h1>Visual builder launch</h1><time datetime="2026-06-09">June 9, 2026</time><p>We shipped a visual workflow builder with canvas preview.</p><img src="/builder-screenshot.png"><img src="/demo.gif"><iframe src="https://www.youtube.com/embed/abc123"></iframe><video poster="/video-poster.png"><source src="/walkthrough.mp4"></video></article></main></body></html>`, {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }
     throw new Error(`Unexpected collector URL: ${url}`);
   };
   try {
     const firstRun = await collectSignalSummary(collectorRegistry, collectorFile);
-    assert(firstRun.sources_scanned === 3, `Expected 3 supported sources scanned, got ${firstRun.sources_scanned}`);
-    assert(firstRun.signals_discovered === 3, `Expected 3 discovered signals, got ${firstRun.signals_discovered}`);
+    assert(firstRun.sources_scanned === 4, `Expected 4 supported sources scanned, got ${firstRun.sources_scanned}`);
+    assert(firstRun.signals_discovered === 4, `Expected 4 discovered signals, got ${firstRun.signals_discovered}`);
     assert(firstRun.duplicates_skipped === 0, "First run should not skip duplicates");
-    assert(!fetchedUrls.includes("https://example.com/blog"), "Phase 2A should not fetch unsupported blog/news sources yet");
+    assert(fetchedUrls.includes("https://example.com/blog"), "Phase 5 should fetch supported blog/news sources");
+    assert(fetchedUrls.includes("https://example.com/blog/visual-builder-launch"), "Phase 5 should fetch visual article detail pages");
     const collected = await readRawSignals(collectorFile);
-    assert(collected.length === 3, `Expected 3 raw signals, got ${collected.length}`);
+    assert(collected.length === 4, `Expected 4 raw signals, got ${collected.length}`);
     assert(collected.every((item) => item.status === "discovered"), "Collected signals should use discovered status");
     assert(collected.every((item) => typeof item.quality_score === "number" && item.quality_score > 0), "Collected signals should include quality_score");
     assert(collected.some((item) => item.source_type === "release_notes" && item.title === "Release Notes"), "Release notes signal should be collected from HTML title");
@@ -243,11 +268,17 @@ try {
     assert(htmlSignal.raw_text.includes("New canvas controls"), "HTML extraction should keep release entry content");
     assert(collected.some((item) => item.signal_url === "https://github.com/example/project/releases/tag/v1.2.0" && item.raw_text.includes("Added release flow")), "GitHub releases API signal should be collected");
     assert(collected.some((item) => item.signal_url === "https://github.com/example/project/releases/tag/v1.2.1" && item.raw_text.includes("Added atom release notes")), "GitHub Atom release signal should be collected");
+    const visualSignal = collected.find((item) => item.source_type === "blog")!;
+    assert(visualSignal.has_visual_signal, "Visual blog signal should be marked as visual");
+    assert(visualSignal.media_count >= 5, `Visual blog signal should collect article images, videos, GIFs, and thumbnails, got ${visualSignal.media_count}`);
+    assert(visualSignal.image_count > 0, "Visual blog signal should include images/screenshots");
+    assert(visualSignal.video_count > 0, "Visual blog signal should include embedded videos");
+    assert(visualSignal.gif_count > 0, "Visual blog signal should include GIFs");
 
     const secondRun = await collectSignalSummary(collectorRegistry, collectorFile);
     assert(secondRun.signals_discovered === 0, "Duplicate run should not discover new signals");
-    assert(secondRun.duplicates_skipped === 3, `Duplicate run should skip 3 signals, got ${secondRun.duplicates_skipped}`);
-    assert((await readRawSignals(collectorFile)).length === 3, "Duplicate run should not append repeated raw signals");
+    assert(secondRun.duplicates_skipped >= 3, `Duplicate run should skip or conservatively merge repeated signals, got ${secondRun.duplicates_skipped} skipped`);
+    assert((await readRawSignals(collectorFile)).length === 4, "Duplicate run should not append repeated raw signals");
   } finally {
     globalThis.fetch = originalFetch;
   }

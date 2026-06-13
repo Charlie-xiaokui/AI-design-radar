@@ -7,6 +7,8 @@ type AccessType = "public" | "login_required" | "manual" | "unknown";
 type RawSignalStatus = "discovered" | "pending_review" | "approved" | "rejected" | "archived";
 type HomepageCandidateStatus = boolean | "unknown";
 type HomepageCandidateFilterValue = "true" | "false" | "unknown";
+type HomepageReviewCriterion = "visual_asset_present" | "ui_or_workflow_change" | "reusable_pattern" | "pm_designer_inspiration" | "trusted_source";
+type HomepageReviewCriteria = Record<HomepageReviewCriterion, 0 | 1>;
 type HomepageCategory = "new_ui" | "new_workflow" | "new_interaction_pattern" | "agent_experience" | "canvas_workspace" | "concept" | "unknown";
 type VisualAssetType = "video" | "gif" | "screenshot" | "flow_diagram" | "concept_mockup" | "unknown";
 interface ProductSource { id: string; type: string; url: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; priority: number; status: "active" | "disabled" | "paused"; collector: string; last_checked_at: string; last_update_at: string; screenshot_count: number; gif_count: number; video_count: number; health: "unchecked" | "ok" | "failed" | "redirected" | "timeout"; scan_frequency: string; notes: string; }
@@ -18,7 +20,7 @@ interface Health { source_id: string; source_type: SourceType; url: string; fina
 interface Audit { product_name: string; updates_30d: number; latest_update_at: string; screenshot_count: number; gif_count: number; video_count: number; media_score: number; activity_score: number; collector_priority: "high" | "medium" | "low"; }
 interface Coverage { product_name: string; source_id: string; identity_sources: number; updates_sources: number; media_sources: number; discovery_sources: number; community_sources: number; x_sources: number; github_sources: number; missing_identity_source: boolean; missing_updates_source: boolean; missing_media_source: boolean; needs_review_count: number; coverage_score: number; }
 interface Review { source_id: string; source_type: SourceType; manual_verified: boolean; media_marked: boolean; updated_at: string; }
-interface RawSignal { id: string; product: string; source_id: string; source_url: string; signal_url: string; title: string; description: string; published_at: string; raw_text: string; media_urls: string[]; media_types: string[]; source_type: string; status: RawSignalStatus; quality_score: number; homepage_candidate: HomepageCandidateStatus; homepage_score: number; homepage_reasons: string[]; homepage_category: HomepageCategory; is_concept: boolean; visual_asset_type: VisualAssetType; created_at: string; updated_at: string; }
+interface RawSignal { id: string; product: string; source_id: string; source_url: string; signal_url: string; title: string; description: string; published_at: string; raw_text: string; media_urls: string[]; media_types: string[]; media_count: number; image_count: number; video_count: number; gif_count: number; has_visual_signal: boolean; source_type: string; status: RawSignalStatus; quality_score: number; homepage_candidate: HomepageCandidateStatus; homepage_criteria: HomepageReviewCriteria; homepage_score: number; homepage_reasons: string[]; homepage_category: HomepageCategory; is_concept: boolean; visual_asset_type: VisualAssetType; created_at: string; updated_at: string; }
 interface Snapshot { sources: Source[]; health: Health[]; reviews: Review[]; audit: Audit[]; candidates: SourceCandidate[]; recommendations: Record<string, SourceRecommendation[]>; coverage: Coverage[]; }
 
 const categories: Category[] = ["Chat", "IDE", "Workflow", "Agent", "Canvas", "Research", "Design", "Automation", "Prompt→App", "Other"];
@@ -53,6 +55,14 @@ const productSourceTypes = ["homepage", "changelog", "release_notes", "blog", "n
 const productSourcePurposes = ["identity", "updates", "media", "discovery", "community"];
 const productSourceStatuses = ["active", "disabled", "paused"];
 const homepageCandidateStatuses: HomepageCandidateFilterValue[] = ["true", "false", "unknown"];
+const homepageReviewCriteria: HomepageReviewCriterion[] = ["visual_asset_present", "ui_or_workflow_change", "reusable_pattern", "pm_designer_inspiration", "trusted_source"];
+const homepageCriteriaLabels: Record<HomepageReviewCriterion, string> = {
+  visual_asset_present: "视觉素材",
+  ui_or_workflow_change: "UI / 工作流变化",
+  reusable_pattern: "可复用设计模式",
+  pm_designer_inspiration: "PM / 设计师启发",
+  trusted_source: "可信来源",
+};
 const homepageCategories: HomepageCategory[] = ["new_ui", "new_workflow", "new_interaction_pattern", "agent_experience", "canvas_workspace", "concept", "unknown"];
 const visualAssetTypes: VisualAssetType[] = ["video", "gif", "screenshot", "flow_diagram", "concept_mockup", "unknown"];
 const accessTypes: AccessType[] = ["public", "login_required", "manual", "unknown"];
@@ -146,17 +156,62 @@ function normalizeRawSignal(signal: RawSignal): RawSignal {
   const homepageCandidate = parseHomepageCandidateValue(signal.homepage_candidate);
   const homepageCategory = homepageCategories.includes(signal.homepage_category) ? signal.homepage_category : "unknown";
   const visualAssetType = visualAssetTypes.includes(signal.visual_asset_type) ? signal.visual_asset_type : "unknown";
+  const homepageCriteria = normalizeHomepageCriteria(signal.homepage_criteria, signal.source_type);
   return {
     ...signal,
     media_urls: safeArray<string>(signal.media_urls),
     media_types: safeArray<string>(signal.media_types),
+    ...rawSignalMediaMetadata(signal),
     homepage_candidate: homepageCandidate,
-    homepage_score: typeof signal.homepage_score === "number" ? signal.homepage_score : 0,
+    homepage_criteria: homepageCriteria,
+    homepage_score: homepageScore(homepageCriteria),
     homepage_reasons: safeArray<string>(signal.homepage_reasons),
     homepage_category: homepageCategory,
     is_concept: Boolean(signal.is_concept),
     visual_asset_type: visualAssetType,
   };
+}
+
+function rawSignalMediaMetadata(signal: Pick<RawSignal, "media_urls" | "media_types">): Pick<RawSignal, "media_count" | "image_count" | "video_count" | "gif_count" | "has_visual_signal"> {
+  const urls = safeArray<string>(signal.media_urls);
+  const types = urls.map((url, index) => String(safeArray<string>(signal.media_types)[index] ?? (/\.gif(?:$|[?#])/i.test(url) ? "gif" : /\.(?:mp4|webm|mov|m4v)(?:$|[?#])/i.test(url) ? "video" : "image")).toLowerCase());
+  const gifCount = types.filter((type, index) => type === "gif" || /\.gif(?:$|[?#])/i.test(urls[index] ?? "")).length;
+  const videoCount = types.filter((type) => type === "video").length;
+  return {
+    media_count: urls.length,
+    gif_count: gifCount,
+    video_count: videoCount,
+    image_count: Math.max(0, urls.length - gifCount - videoCount),
+    has_visual_signal: urls.some((url, index) => isLikelyVisualSignalMedia(url, types[index] ?? "image")),
+  };
+}
+
+function isLikelyVisualSignalMedia(url: string, type: string): boolean {
+  const lower = decodeURIComponent(url).toLowerCase();
+  if (!url) return false;
+  if (/\.(?:svg|ico)(?:$|[?#])/.test(lower)) return false;
+  if (/(?:^|[/_.-])(?:logo|icon|favicon|avatar|wordmark|sprite|placeholder|tracking|pixel|blank|transparent)(?:[/_.-]|$)/i.test(lower)) return false;
+  if (type === "video" || type === "gif") return true;
+  return type === "image";
+}
+
+function normalizeHomepageCriteria(value: unknown, sourceType = ""): HomepageReviewCriteria {
+  const input = value && typeof value === "object" ? value as Partial<Record<HomepageReviewCriterion, unknown>> : {};
+  return Object.fromEntries(homepageReviewCriteria.map((criterion) => {
+    const raw = input[criterion];
+    if (raw === 1 || raw === true || raw === "1" || raw === "true") return [criterion, 1];
+    if (raw === 0 || raw === false || raw === "0" || raw === "false") return [criterion, 0];
+    if (criterion === "trusted_source" && ["release_notes", "changelog", "blog", "news", "github_releases", "github_releases_rss", "youtube", "product_hunt", "x"].includes(sourceType)) return [criterion, 1];
+    return [criterion, 0];
+  })) as HomepageReviewCriteria;
+}
+
+function homepageScore(criteria: HomepageReviewCriteria): number {
+  return homepageReviewCriteria.reduce((sum, criterion) => sum + criteria[criterion], 0);
+}
+
+function homepageRecommendation(score: number): "recommended" | "not_recommended" {
+  return score >= 3 ? "recommended" : "not_recommended";
 }
 
 function parseHomepageCandidateValue(value: unknown): HomepageCandidateStatus {
@@ -205,6 +260,7 @@ const rawSignalFilters = {
   product: $("#rawSignalProductFilter") as HTMLSelectElement,
   type: $("#rawSignalTypeFilter") as HTMLSelectElement,
   status: $("#rawSignalStatusFilter") as HTMLSelectElement,
+  visual: $("#rawSignalVisualFilter") as HTMLInputElement,
 };
 const homepageCandidateFilters = {
   candidate: $("#homepageCandidateFilter") as HTMLSelectElement,
@@ -532,7 +588,8 @@ function visibleRawSignals(): RawSignal[] {
   return safeArray<RawSignal>(rawSignals).filter((signal) =>
     (!rawSignalFilters.product.value || signal.product === rawSignalFilters.product.value)
     && (!rawSignalFilters.type.value || signal.source_type === rawSignalFilters.type.value)
-    && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value));
+    && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value)
+    && (!rawSignalFilters.visual.checked || signal.has_visual_signal));
 }
 
 function signalSortTimestamp(signal: RawSignal): number {
@@ -592,18 +649,28 @@ function homepageSelect<T extends string>(values: T[], selected: T, field: strin
   return `<select data-homepage-field="${field}">${values.map((value) => `<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`).join("")}</select>`;
 }
 
+function homepageCriteriaControls(signal: RawSignal): string {
+  return `<div class="homepage-score-breakdown">
+    <div class="homepage-score-head">
+      <strong>首页评分 ${signal.homepage_score}/5</strong>
+      <span class="homepage-recommendation ${homepageRecommendation(signal.homepage_score)}">${signal.homepage_score >= 3 ? "推荐" : "不推荐"}</span>
+    </div>
+    ${homepageReviewCriteria.map((criterion) => `<label class="homepage-criterion"><input data-homepage-criterion="${criterion}" type="checkbox" ${signal.homepage_criteria[criterion] ? "checked" : ""}/><span>${homepageCriteriaLabels[criterion]}</span><strong>${signal.homepage_criteria[criterion] ? "✓" : "✗"}</strong></label>`).join("")}
+  </div>`;
+}
+
 function renderHomepageCandidates(): void {
   fillHomepageCandidateFilters();
   const approved = approvedSignals();
   const visible = visibleHomepageCandidateSignals();
-  $("#homepageCandidateCount").textContent = `${visible.length} / ${approved.length} approved signals`;
+  $("#homepageCandidateCount").textContent = `${visible.length} / ${approved.length} 条已审核信号`;
   $("#homepageCandidateStats").innerHTML = [
-    [approved.length, "Approved Signals"],
-    [approved.filter((item) => item.homepage_candidate === true).length, "Homepage Candidates"],
-    [approved.filter((item) => item.homepage_candidate === false).length, "Not Candidates"],
-    [approved.filter((item) => item.homepage_candidate === "unknown").length, "Unknown"],
-    [approved.filter((item) => item.media_urls.length > 0).length, "With Media"],
-    [approved.filter((item) => item.is_concept).length, "Concepts"],
+    [approved.length, "已通过信号"],
+    [approved.filter((item) => item.homepage_candidate === true).length, "首页候选"],
+    [approved.filter((item) => item.homepage_candidate === false).length, "非首页候选"],
+    [approved.filter((item) => item.homepage_candidate === "unknown").length, "未判断"],
+    [approved.filter((item) => item.homepage_score >= 3).length, "推荐"],
+    [approved.filter((item) => item.homepage_score < 3).length, "不推荐"],
   ].map(([value, label]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
   $("#homepageCandidateList").innerHTML = visible.length ? visible.map((signal) => `<article class="homepage-candidate-card" data-homepage-signal-id="${escapeHtml(signal.id)}">
     ${mediaPreview(signal, false)}
@@ -611,18 +678,18 @@ function renderHomepageCandidates(): void {
       <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at || signal.created_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span>${escapeHtml(homepageCandidateFilterValue(signal.homepage_candidate))}</span><span>${escapeHtml(signal.homepage_category)}</span><span>${escapeHtml(signal.visual_asset_type)}</span>${signal.is_concept ? "<span>Concept</span>" : ""}</div>
       <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
       <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 260))}</p>
-      <a class="mini-button homepage-signal-link" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>
+      <a class="mini-button homepage-signal-link" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">查看原文</a>
     </div>
     <div class="homepage-review-controls">
-      <label>Candidate${homepageSelect(homepageCandidateStatuses, homepageCandidateFilterValue(signal.homepage_candidate), "homepage_candidate")}</label>
-      <label>Category${homepageSelect(homepageCategories, signal.homepage_category, "homepage_category")}</label>
-      <label>Visual Asset${homepageSelect(visualAssetTypes, signal.visual_asset_type, "visual_asset_type")}</label>
-      <label>Score<input data-homepage-field="homepage_score" type="number" min="0" max="5" value="${escapeHtml(signal.homepage_score)}" /></label>
-      <label class="check-label"><input data-homepage-field="is_concept" type="checkbox" ${signal.is_concept ? "checked" : ""}/>Concept</label>
-      <label class="homepage-reasons">Reasons<textarea data-homepage-field="homepage_reasons" rows="3" placeholder="One reason per line">${escapeHtml(signal.homepage_reasons.join("\n"))}</textarea></label>
-      <button class="mini-button" data-homepage-action="save">Save Homepage Review</button>
+      <label>首页候选${homepageSelect(homepageCandidateStatuses, homepageCandidateFilterValue(signal.homepage_candidate), "homepage_candidate")}</label>
+      <label>分类${homepageSelect(homepageCategories, signal.homepage_category, "homepage_category")}</label>
+      <label>视觉类型${homepageSelect(visualAssetTypes, signal.visual_asset_type, "visual_asset_type")}</label>
+      <label class="check-label"><input data-homepage-field="is_concept" type="checkbox" ${signal.is_concept ? "checked" : ""}/>概念稿</label>
+      ${homepageCriteriaControls(signal)}
+      <label class="homepage-reasons">入选理由<textarea data-homepage-field="homepage_reasons" rows="3" placeholder="每行一个理由">${escapeHtml(signal.homepage_reasons.join("\n"))}</textarea></label>
+      <button class="mini-button" data-homepage-action="save">保存首页审核</button>
     </div>
-  </article>`).join("") : `<div class="empty-state">No approved signals match homepage candidate filters.</div>`;
+  </article>`).join("") : `<div class="empty-state">没有符合筛选条件的已审核信号。</div>`;
 }
 
 function renderRawSignals(): void {
@@ -633,14 +700,15 @@ function renderRawSignals(): void {
   $("#rawSignalStats").innerHTML = [
     [all.length, "Total Signals"],
     [all.filter((item) => item.status === "approved").length, "Approved"],
-    [all.filter((item) => item.status === "rejected").length, "Rejected"],
-    [all.filter((item) => item.status === "archived").length, "Archived"],
-    [all.filter((item) => safeArray<string>(item.media_urls).length > 0).length, "With Media"],
+    [all.filter((item) => item.image_count > 0).length, "Signals With Screenshots"],
+    [all.filter((item) => item.video_count > 0).length, "Signals With Video"],
+    [all.filter((item) => item.gif_count > 0).length, "Signals With GIF"],
+    [all.filter((item) => item.status === "approved" && item.homepage_candidate === true && item.homepage_score >= 3 && item.has_visual_signal).length, "Homepage-qualified Visual"],
   ].map(([value, label]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
   $("#rawSignalList").innerHTML = visible.length ? visible.map((signal) => `<article class="raw-signal-card">
     ${mediaPreview(signal)}
     <div class="raw-signal-body">
-      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span class="review-status ${escapeHtml(signal.status)}">${escapeHtml(signal.status)}</span></div>
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span>M${signal.media_count} · I${signal.image_count} · V${signal.video_count} · G${signal.gif_count}</span><span class="review-status ${escapeHtml(signal.status)}">${escapeHtml(signal.status)}</span></div>
       <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
       <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 220))}</p>
       <div class="raw-signal-actions"><a class="mini-button" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>${rawSignalActions(signal)}</div>
@@ -817,11 +885,15 @@ $("#homepageCandidateList").addEventListener("click", async (event) => {
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean);
+  const homepageCriteria = Object.fromEntries(homepageReviewCriteria.map((criterion) => [
+    criterion,
+    card.querySelector<HTMLInputElement>(`[data-homepage-criterion='${criterion}']`)?.checked ? 1 : 0,
+  ])) as HomepageReviewCriteria;
   const body = {
     homepage_candidate: parseHomepageCandidateValue(card.querySelector<HTMLSelectElement>("[data-homepage-field='homepage_candidate']")!.value),
     homepage_category: card.querySelector<HTMLSelectElement>("[data-homepage-field='homepage_category']")!.value,
     visual_asset_type: card.querySelector<HTMLSelectElement>("[data-homepage-field='visual_asset_type']")!.value,
-    homepage_score: Number(card.querySelector<HTMLInputElement>("[data-homepage-field='homepage_score']")!.value),
+    homepage_criteria: homepageCriteria,
     is_concept: card.querySelector<HTMLInputElement>("[data-homepage-field='is_concept']")!.checked,
     homepage_reasons: reasons,
   };

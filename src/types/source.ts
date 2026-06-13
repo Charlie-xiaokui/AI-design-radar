@@ -56,6 +56,13 @@ export const SUGGESTED_SOURCE_STATUSES = ["suggested", "pending_review", "verifi
 export const ACCESS_TYPES = ["public", "login_required", "manual", "unknown"] as const;
 export const RAW_SIGNAL_STATUSES = ["discovered", "pending_review", "approved", "rejected", "archived"] as const;
 export const HOMEPAGE_CANDIDATE_STATUSES = [true, false, "unknown"] as const;
+export const HOMEPAGE_REVIEW_CRITERIA = [
+  "visual_asset_present",
+  "ui_or_workflow_change",
+  "reusable_pattern",
+  "pm_designer_inspiration",
+  "trusted_source",
+] as const;
 export const HOMEPAGE_CATEGORIES = ["new_ui", "new_workflow", "new_interaction_pattern", "agent_experience", "canvas_workspace", "concept", "unknown"] as const;
 export const VISUAL_ASSET_TYPES = ["video", "gif", "screenshot", "flow_diagram", "concept_mockup", "unknown"] as const;
 export const SOURCE_TYPES = [
@@ -81,6 +88,8 @@ export type SuggestedSourceStatus = (typeof SUGGESTED_SOURCE_STATUSES)[number];
 export type AccessType = (typeof ACCESS_TYPES)[number];
 export type RawSignalStatus = (typeof RAW_SIGNAL_STATUSES)[number];
 export type HomepageCandidateStatus = boolean | "unknown";
+export type HomepageReviewCriterion = (typeof HOMEPAGE_REVIEW_CRITERIA)[number];
+export type HomepageReviewCriteria = Record<HomepageReviewCriterion, 0 | 1>;
 export type HomepageCategory = (typeof HOMEPAGE_CATEGORIES)[number];
 export type VisualAssetType = (typeof VISUAL_ASSET_TYPES)[number];
 export type SourceType = (typeof SOURCE_TYPES)[number];
@@ -268,10 +277,16 @@ export interface RawSignal {
   raw_text: string;
   media_urls: string[];
   media_types: string[];
+  media_count: number;
+  image_count: number;
+  video_count: number;
+  gif_count: number;
+  has_visual_signal: boolean;
   source_type: ProductSourceType;
   status: RawSignalStatus;
   quality_score: number;
   homepage_candidate: HomepageCandidateStatus;
+  homepage_criteria: HomepageReviewCriteria;
   homepage_score: number;
   homepage_reasons: string[];
   homepage_category: HomepageCategory;

@@ -3,10 +3,12 @@ import path from "node:path";
 import { config } from "../config.ts";
 import {
   HOMEPAGE_CATEGORIES,
+  HOMEPAGE_REVIEW_CRITERIA,
   RAW_SIGNAL_STATUSES,
   VISUAL_ASSET_TYPES,
   type HomepageCandidateStatus,
   type HomepageCategory,
+  type HomepageReviewCriteria,
   type RawSignal,
   type RawSignalStatus,
   type VisualAssetType,
@@ -25,7 +27,7 @@ const LOCKED_STATUSES = new Set<RawSignalStatus>(["approved", "rejected"]);
 
 export type RawSignalHomepageReviewPatch = Partial<Pick<
   RawSignal,
-  "homepage_candidate" | "homepage_score" | "homepage_reasons" | "homepage_category" | "is_concept" | "visual_asset_type"
+  "homepage_candidate" | "homepage_criteria" | "homepage_reasons" | "homepage_category" | "is_concept" | "visual_asset_type"
 >>;
 
 async function ensureRawSignalFile(filePath: string): Promise<void> {
@@ -56,20 +58,76 @@ function normalizeHomepageCandidateStatus(value: unknown): HomepageCandidateStat
   return "unknown";
 }
 
+function mediaTypeForUrl(url: string): string {
+  if (/\.gif(?:$|[?#])/i.test(url)) return "gif";
+  if (/\.(?:mp4|webm|mov|m4v)(?:$|[?#])/i.test(url)) return "video";
+  return "image";
+}
+
+export function rawSignalMediaMetadata(signal: Pick<RawSignal, "media_urls" | "media_types">): Pick<RawSignal, "media_count" | "image_count" | "video_count" | "gif_count" | "has_visual_signal"> {
+  const urls = Array.isArray(signal.media_urls) ? signal.media_urls.filter(Boolean) : [];
+  const explicitTypes = Array.isArray(signal.media_types) ? signal.media_types : [];
+  const types = urls.map((url, index) => String(explicitTypes[index] ?? mediaTypeForUrl(url)).toLowerCase());
+  const gifCount = types.filter((type, index) => type === "gif" || /\.gif(?:$|[?#])/i.test(urls[index] ?? "")).length;
+  const videoCount = types.filter((type) => type === "video").length;
+  const imageCount = Math.max(0, urls.length - gifCount - videoCount);
+  return {
+    media_count: urls.length,
+    image_count: imageCount,
+    video_count: videoCount,
+    gif_count: gifCount,
+    has_visual_signal: urls.some((url, index) => isLikelyVisualSignalMedia(url, types[index] ?? "image")),
+  };
+}
+
+function isLikelyVisualSignalMedia(url: string, type: string): boolean {
+  const lower = decodeURIComponent(url).toLowerCase();
+  if (!url) return false;
+  if (/\.(?:svg|ico)(?:$|[?#])/.test(lower)) return false;
+  if (/(?:^|[/_.-])(?:logo|icon|favicon|avatar|wordmark|sprite|placeholder|tracking|pixel|blank|transparent)(?:[/_.-]|$)/i.test(lower)) return false;
+  if (type === "video" || type === "gif") return true;
+  return type === "image";
+}
+
+function isTrustedSourceType(sourceType: string): boolean {
+  return ["release_notes", "changelog", "blog", "news", "github_releases", "github_releases_rss", "youtube", "product_hunt", "x"].includes(sourceType);
+}
+
+export function normalizeHomepageCriteria(value: unknown, signal?: Pick<RawSignal, "source_type">): HomepageReviewCriteria {
+  const input = value && typeof value === "object" ? value as Partial<Record<keyof HomepageReviewCriteria, unknown>> : {};
+  return Object.fromEntries(HOMEPAGE_REVIEW_CRITERIA.map((criterion) => {
+    const raw = input[criterion];
+    if (raw === 1 || raw === true || raw === "1" || raw === "true") return [criterion, 1];
+    if (raw === 0 || raw === false || raw === "0" || raw === "false") return [criterion, 0];
+    if (criterion === "trusted_source" && signal?.source_type && isTrustedSourceType(signal.source_type)) return [criterion, 1];
+    return [criterion, 0];
+  })) as HomepageReviewCriteria;
+}
+
+export function calculateHomepageScore(criteria: HomepageReviewCriteria): number {
+  return HOMEPAGE_REVIEW_CRITERIA.reduce((sum, criterion) => sum + criteria[criterion], 0);
+}
+
 export async function readRawSignals(filePath = config.rawSignalsFile): Promise<RawSignal[]> {
   await ensureRawSignalFile(filePath);
   const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
   return Array.isArray(parsed)
-    ? (parsed as RawSignal[]).map((signal) => ({
-      ...signal,
-      quality_score: calculateSignalQualityScore(signal),
-      homepage_candidate: normalizeHomepageCandidateStatus(signal.homepage_candidate),
-      homepage_score: typeof signal.homepage_score === "number" ? signal.homepage_score : 0,
-      homepage_reasons: Array.isArray(signal.homepage_reasons) ? signal.homepage_reasons.map(String) : [],
-      homepage_category: HOMEPAGE_CATEGORIES.includes(signal.homepage_category as HomepageCategory) ? signal.homepage_category : "unknown",
-      is_concept: Boolean(signal.is_concept),
-      visual_asset_type: VISUAL_ASSET_TYPES.includes(signal.visual_asset_type as VisualAssetType) ? signal.visual_asset_type : "unknown",
-    }))
+    ? (parsed as RawSignal[]).map((signal) => {
+      const mediaMetadata = rawSignalMediaMetadata(signal);
+      const homepageCriteria = normalizeHomepageCriteria(signal.homepage_criteria, signal);
+      return {
+        ...signal,
+        quality_score: calculateSignalQualityScore(signal),
+        ...mediaMetadata,
+        homepage_candidate: normalizeHomepageCandidateStatus(signal.homepage_candidate),
+        homepage_criteria: homepageCriteria,
+        homepage_score: calculateHomepageScore(homepageCriteria),
+        homepage_reasons: Array.isArray(signal.homepage_reasons) ? signal.homepage_reasons.map(String) : [],
+        homepage_category: HOMEPAGE_CATEGORIES.includes(signal.homepage_category as HomepageCategory) ? signal.homepage_category : "unknown",
+        is_concept: Boolean(signal.is_concept),
+        visual_asset_type: VISUAL_ASSET_TYPES.includes(signal.visual_asset_type as VisualAssetType) ? signal.visual_asset_type : "unknown",
+      };
+    })
     : [];
 }
 
@@ -134,7 +192,7 @@ export async function upsertRawSignals(incoming: RawSignal[], filePath = config.
   let merged = 0;
   let duplicatesSkipped = 0;
   for (const signal of incoming) {
-    const normalizedSignal = { ...signal, quality_score: calculateSignalQualityScore(signal) };
+    const normalizedSignal = { ...signal, quality_score: calculateSignalQualityScore(signal), ...rawSignalMediaMetadata(signal) };
     const duplicate = findDuplicateRawSignal(normalizedSignal, signals);
     if (!duplicate) {
       signals.push(normalizedSignal);
@@ -175,10 +233,14 @@ export async function updateRawSignalHomepageReview(id: string, patch: RawSignal
   if (index < 0) throw new Error("Raw signal not found");
   const existing = signals[index]!;
   const homepageCandidate = normalizeHomepageCandidateStatus(patch.homepage_candidate);
+  const homepageCriteria = patch.homepage_criteria !== undefined
+    ? normalizeHomepageCriteria(patch.homepage_criteria, existing)
+    : existing.homepage_criteria;
   const next: RawSignal = {
     ...existing,
     ...(patch.homepage_candidate !== undefined ? { homepage_candidate: homepageCandidate } : {}),
-    ...(typeof patch.homepage_score === "number" ? { homepage_score: Math.max(0, Math.min(5, Math.round(patch.homepage_score))) } : {}),
+    homepage_criteria: homepageCriteria,
+    homepage_score: calculateHomepageScore(homepageCriteria),
     ...(Array.isArray(patch.homepage_reasons) ? { homepage_reasons: patch.homepage_reasons.map(String).map((item) => item.trim()).filter(Boolean) } : {}),
     ...(patch.homepage_category && HOMEPAGE_CATEGORIES.includes(patch.homepage_category) ? { homepage_category: patch.homepage_category } : {}),
     ...(typeof patch.is_concept === "boolean" ? { is_concept: patch.is_concept } : {}),
