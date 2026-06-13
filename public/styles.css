@@ -29,7 +29,9 @@ main { padding: 24px 52px 64px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
 .coverage-panel { margin-bottom: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
 .raw-signals-panel { margin-bottom: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--panel) 92%, #162214); }
-.stats.compact { grid-template-columns: repeat(5, 1fr); margin: 14px 0; }
+.approved-signals-panel { margin-bottom: 18px; padding: 18px; border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line)); border-radius: 12px; background: color-mix(in srgb, var(--panel) 90%, #192711); }
+.homepage-candidate-panel { margin-bottom: 18px; padding: 18px; border: 1px solid color-mix(in srgb, var(--amber) 28%, var(--line)); border-radius: 12px; background: color-mix(in srgb, var(--panel) 88%, #261f12); }
+.stats.compact { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin: 14px 0; }
 .stats.compact .stat { padding: 12px; }
 .stats.compact .stat strong { font-size: 22px; }
 .raw-signal-filters { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px; margin: 12px 0 14px; }
@@ -45,6 +47,26 @@ main { padding: 24px 52px 64px; }
 .raw-signal-meta { display: flex; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 10px; }
 .raw-signal-meta span { padding: 3px 6px; border-radius: 999px; background: #171b1a; }
 .raw-signal-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.approved-signal-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 14px; }
+.approved-signal-card { display: grid; gap: 10px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #0f1212; color: var(--text); text-decoration: none; transition: transform .15s ease, border-color .15s ease; }
+.approved-signal-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+.approved-signal-card .raw-signal-media { width: 100%; height: 138px; }
+.approved-signal-copy { display: grid; gap: 7px; min-width: 0; }
+.approved-signal-copy h3 { display: -webkit-box; overflow: hidden; min-height: 40px; margin: 0; font-size: 14px; line-height: 1.35; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.homepage-candidate-filters { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+.homepage-candidate-list { display: grid; gap: 12px; max-height: 760px; overflow: auto; padding-right: 4px; }
+.homepage-candidate-card { display: grid; grid-template-columns: 168px minmax(260px, 1fr) 320px; gap: 14px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: #0f1212; }
+.homepage-candidate-card .raw-signal-media { width: 168px; height: 120px; }
+.homepage-candidate-main { min-width: 0; }
+.homepage-candidate-main h3 { margin: 7px 0 6px; overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.homepage-candidate-main p { display: -webkit-box; overflow: hidden; margin: 0 0 10px; color: var(--muted); font-size: 11px; line-height: 1.45; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.homepage-signal-link { width: max-content; text-decoration: none; }
+.homepage-review-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start; }
+.homepage-review-controls label { min-width: 0; }
+.homepage-review-controls input, .homepage-review-controls select, .homepage-review-controls textarea { font-size: 11px; }
+.homepage-review-controls .check-label { height: 38px; }
+.homepage-reasons { grid-column: span 2; }
+.homepage-review-controls button { grid-column: span 2; }
 .coverage-heading { display: flex; justify-content: space-between; align-items: end; }
 .coverage-heading h2 { margin: 0; font-size: 20px; }
 .coverage-heading > span { color: var(--muted); font-size: 11px; }

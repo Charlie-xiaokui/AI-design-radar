@@ -34,6 +34,23 @@
         </div>
         <div class="raw-signal-list" id="rawSignalList"></div>
       </section>
+      <section class="approved-signals-panel">
+        <div class="coverage-heading"><div><p class="eyebrow">APPROVED SIGNALS</p><h2>Approved Signals</h2></div><span id="approvedSignalCount"></span></div>
+        <section class="stats compact" id="approvedSignalStats"></section>
+        <div class="approved-signal-gallery" id="approvedSignalGallery"></div>
+      </section>
+      <section class="homepage-candidate-panel">
+        <div class="coverage-heading"><div><p class="eyebrow">HOMEPAGE CANDIDATES</p><h2>Homepage Candidate Review</h2></div><span id="homepageCandidateCount"></span></div>
+        <section class="stats compact" id="homepageCandidateStats"></section>
+        <div class="homepage-candidate-filters">
+          <label>Candidate<select id="homepageCandidateFilter"><option value="">All</option><option value="true">Candidate</option><option value="false">Not Candidate</option><option value="unknown">Unknown</option></select></label>
+          <label class="review-filter"><input id="homepageWithMediaFilter" type="checkbox" /> With media only</label>
+          <label>Category<select id="homepageCategoryFilter"><option value="">All</option></select></label>
+          <label>Visual Asset<select id="homepageVisualAssetFilter"><option value="">All</option></select></label>
+          <label class="review-filter"><input id="homepageConceptFilter" type="checkbox" /> Concept only</label>
+        </div>
+        <div class="homepage-candidate-list" id="homepageCandidateList"></div>
+      </section>
       <section class="coverage-panel">
         <div class="coverage-heading"><div><p class="eyebrow">SOURCE COVERAGE</p><h2>Coverage Dashboard</h2></div><span id="coverageCount"></span></div>
         <div class="coverage-filters">

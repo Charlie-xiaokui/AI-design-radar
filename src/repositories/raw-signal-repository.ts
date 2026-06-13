@@ -1,7 +1,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.ts";
-import { RAW_SIGNAL_STATUSES, type RawSignal, type RawSignalStatus } from "../types/source.ts";
+import {
+  HOMEPAGE_CATEGORIES,
+  RAW_SIGNAL_STATUSES,
+  VISUAL_ASSET_TYPES,
+  type HomepageCandidateStatus,
+  type HomepageCategory,
+  type RawSignal,
+  type RawSignalStatus,
+  type VisualAssetType,
+} from "../types/source.ts";
 import { calculateSignalQualityScore } from "../services/signal-quality.ts";
 import { writeJsonFile } from "./json-file.ts";
 
@@ -13,6 +22,11 @@ export interface RawSignalUpsertResult {
 }
 
 const LOCKED_STATUSES = new Set<RawSignalStatus>(["approved", "rejected"]);
+
+export type RawSignalHomepageReviewPatch = Partial<Pick<
+  RawSignal,
+  "homepage_candidate" | "homepage_score" | "homepage_reasons" | "homepage_category" | "is_concept" | "visual_asset_type"
+>>;
 
 async function ensureRawSignalFile(filePath: string): Promise<void> {
   try {
@@ -36,6 +50,12 @@ function duplicateKeyBySourceDateTitle(signal: Pick<RawSignal, "source_id" | "pu
   return `${signal.source_id}::${signal.published_at}::${normalizeText(signal.title)}`;
 }
 
+function normalizeHomepageCandidateStatus(value: unknown): HomepageCandidateStatus {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return "unknown";
+}
+
 export async function readRawSignals(filePath = config.rawSignalsFile): Promise<RawSignal[]> {
   await ensureRawSignalFile(filePath);
   const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -43,6 +63,12 @@ export async function readRawSignals(filePath = config.rawSignalsFile): Promise<
     ? (parsed as RawSignal[]).map((signal) => ({
       ...signal,
       quality_score: calculateSignalQualityScore(signal),
+      homepage_candidate: normalizeHomepageCandidateStatus(signal.homepage_candidate),
+      homepage_score: typeof signal.homepage_score === "number" ? signal.homepage_score : 0,
+      homepage_reasons: Array.isArray(signal.homepage_reasons) ? signal.homepage_reasons.map(String) : [],
+      homepage_category: HOMEPAGE_CATEGORIES.includes(signal.homepage_category as HomepageCategory) ? signal.homepage_category : "unknown",
+      is_concept: Boolean(signal.is_concept),
+      visual_asset_type: VISUAL_ASSET_TYPES.includes(signal.visual_asset_type as VisualAssetType) ? signal.visual_asset_type : "unknown",
     }))
     : [];
 }
@@ -141,4 +167,25 @@ export async function updateRawSignalStatus(id: string, status: RawSignalStatus,
   signals[index] = updated;
   await writeRawSignals(signals, filePath);
   return updated;
+}
+
+export async function updateRawSignalHomepageReview(id: string, patch: RawSignalHomepageReviewPatch, filePath = config.rawSignalsFile): Promise<RawSignal> {
+  const signals = await readRawSignals(filePath);
+  const index = signals.findIndex((item) => item.id === id);
+  if (index < 0) throw new Error("Raw signal not found");
+  const existing = signals[index]!;
+  const homepageCandidate = normalizeHomepageCandidateStatus(patch.homepage_candidate);
+  const next: RawSignal = {
+    ...existing,
+    ...(patch.homepage_candidate !== undefined ? { homepage_candidate: homepageCandidate } : {}),
+    ...(typeof patch.homepage_score === "number" ? { homepage_score: Math.max(0, Math.min(5, Math.round(patch.homepage_score))) } : {}),
+    ...(Array.isArray(patch.homepage_reasons) ? { homepage_reasons: patch.homepage_reasons.map(String).map((item) => item.trim()).filter(Boolean) } : {}),
+    ...(patch.homepage_category && HOMEPAGE_CATEGORIES.includes(patch.homepage_category) ? { homepage_category: patch.homepage_category } : {}),
+    ...(typeof patch.is_concept === "boolean" ? { is_concept: patch.is_concept } : {}),
+    ...(patch.visual_asset_type && VISUAL_ASSET_TYPES.includes(patch.visual_asset_type) ? { visual_asset_type: patch.visual_asset_type } : {}),
+    updated_at: new Date().toISOString(),
+  };
+  signals[index] = next;
+  await writeRawSignals(signals, filePath);
+  return next;
 }

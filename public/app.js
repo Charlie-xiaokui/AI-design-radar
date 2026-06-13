@@ -149,6 +149,28 @@ const productSourceStatuses = [
     "disabled",
     "paused"
 ];
+const homepageCandidateStatuses = [
+    "true",
+    "false",
+    "unknown"
+];
+const homepageCategories = [
+    "new_ui",
+    "new_workflow",
+    "new_interaction_pattern",
+    "agent_experience",
+    "canvas_workspace",
+    "concept",
+    "unknown"
+];
+const visualAssetTypes = [
+    "video",
+    "gif",
+    "screenshot",
+    "flow_diagram",
+    "concept_mockup",
+    "unknown"
+];
 const accessTypes = [
     "public",
     "login_required",
@@ -272,6 +294,32 @@ function normalizeSnapshot(value) {
         coverage: safeArray(input.coverage)
     };
 }
+function normalizeRawSignal(signal) {
+    const homepageCandidate = parseHomepageCandidateValue(signal.homepage_candidate);
+    const homepageCategory = homepageCategories.includes(signal.homepage_category) ? signal.homepage_category : "unknown";
+    const visualAssetType = visualAssetTypes.includes(signal.visual_asset_type) ? signal.visual_asset_type : "unknown";
+    return {
+        ...signal,
+        media_urls: safeArray(signal.media_urls),
+        media_types: safeArray(signal.media_types),
+        homepage_candidate: homepageCandidate,
+        homepage_score: typeof signal.homepage_score === "number" ? signal.homepage_score : 0,
+        homepage_reasons: safeArray(signal.homepage_reasons),
+        homepage_category: homepageCategory,
+        is_concept: Boolean(signal.is_concept),
+        visual_asset_type: visualAssetType
+    };
+}
+function parseHomepageCandidateValue(value) {
+    if (value === true || value === "true") return true;
+    if (value === false || value === "false") return false;
+    return "unknown";
+}
+function homepageCandidateFilterValue(value) {
+    if (value === true) return "true";
+    if (value === false) return "false";
+    return "unknown";
+}
 const sourceList = $("#sourceList");
 const dialog = $("#sourceDialog");
 const inspectorDialog = $("#inspectorDialog");
@@ -306,6 +354,13 @@ const rawSignalFilters = {
     product: $("#rawSignalProductFilter"),
     type: $("#rawSignalTypeFilter"),
     status: $("#rawSignalStatusFilter")
+};
+const homepageCandidateFilters = {
+    candidate: $("#homepageCandidateFilter"),
+    mediaOnly: $("#homepageWithMediaFilter"),
+    category: $("#homepageCategoryFilter"),
+    visualAssetType: $("#homepageVisualAssetFilter"),
+    conceptOnly: $("#homepageConceptFilter")
 };
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>'"]/g, (char)=>({
@@ -653,14 +708,15 @@ function rawSignalActions(signal) {
     };
     return (actions[signal.status] ?? []).map((status)=>`<button class="mini-button" data-raw-signal-action="${status}" data-id="${escapeHtml(signal.id)}">${status}</button>`).join("");
 }
-function mediaPreview(signal) {
+function mediaPreview(signal, interactive = true) {
     const mediaUrl = safeArray(signal.media_urls)[0];
     if (!mediaUrl) return `<div class="raw-signal-media empty">No media</div>`;
     const type = safeArray(signal.media_types)[0] ?? "";
     if (type === "video" || /\.(?:mp4|webm|mov)(?:$|[?#])/i.test(mediaUrl)) {
-        return `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>`;
+        return interactive ? `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>` : `<div class="raw-signal-media video">Video media</div>`;
     }
-    return `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>`;
+    const image = `<img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`;
+    return interactive ? `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">${image}</a>` : `<div class="raw-signal-media">${image}</div>`;
 }
 function fillRawSignalFilters() {
     const current = {
@@ -686,8 +742,118 @@ function fillRawSignalFilters() {
     rawSignalFilters.type.value = current.type;
     rawSignalFilters.status.value = current.status;
 }
+function fillHomepageCandidateFilters() {
+    const current = {
+        category: homepageCandidateFilters.category.value,
+        visualAssetType: homepageCandidateFilters.visualAssetType.value
+    };
+    homepageCandidateFilters.category.innerHTML = `<option value="">All</option>${homepageCategories.map((value)=>`<option value="${value}">${value}</option>`).join("")}`;
+    homepageCandidateFilters.visualAssetType.innerHTML = `<option value="">All</option>${visualAssetTypes.map((value)=>`<option value="${value}">${value}</option>`).join("")}`;
+    homepageCandidateFilters.category.value = current.category;
+    homepageCandidateFilters.visualAssetType.value = current.visualAssetType;
+}
 function visibleRawSignals() {
     return safeArray(rawSignals).filter((signal)=>(!rawSignalFilters.product.value || signal.product === rawSignalFilters.product.value) && (!rawSignalFilters.type.value || signal.source_type === rawSignalFilters.type.value) && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value));
+}
+function signalSortTimestamp(signal) {
+    const published = Date.parse(signal.published_at || "");
+    if (Number.isFinite(published)) return published;
+    const created = Date.parse(signal.created_at || "");
+    return Number.isFinite(created) ? created : 0;
+}
+function approvedSignals() {
+    return safeArray(rawSignals).filter((signal)=>signal.status === "approved").sort((a, b)=>signalSortTimestamp(b) - signalSortTimestamp(a));
+}
+function homepageCandidateSortValue(signal) {
+    if (signal.homepage_candidate === true) return 2;
+    if (signal.homepage_candidate === "unknown") return 1;
+    return 0;
+}
+function visibleHomepageCandidateSignals() {
+    return approvedSignals().filter((signal)=>(!homepageCandidateFilters.candidate.value || homepageCandidateFilterValue(signal.homepage_candidate) === homepageCandidateFilters.candidate.value) && (!homepageCandidateFilters.mediaOnly.checked || safeArray(signal.media_urls).length > 0) && (!homepageCandidateFilters.category.value || signal.homepage_category === homepageCandidateFilters.category.value) && (!homepageCandidateFilters.visualAssetType.value || signal.visual_asset_type === homepageCandidateFilters.visualAssetType.value) && (!homepageCandidateFilters.conceptOnly.checked || signal.is_concept)).sort((a, b)=>homepageCandidateSortValue(b) - homepageCandidateSortValue(a) || Number(Boolean(b.media_urls.length)) - Number(Boolean(a.media_urls.length)) || b.homepage_score - a.homepage_score || signalSortTimestamp(b) - signalSortTimestamp(a));
+}
+function renderApprovedSignals() {
+    const approved = approvedSignals();
+    const all = safeArray(rawSignals);
+    $("#approvedSignalCount").textContent = `${approved.length} approved`;
+    $("#approvedSignalStats").innerHTML = [
+        [
+            approved.length,
+            "Total Approved"
+        ],
+        [
+            all.filter((item)=>item.status === "rejected").length,
+            "Rejected"
+        ],
+        [
+            all.filter((item)=>item.status === "archived").length,
+            "Archived"
+        ],
+        [
+            all.filter((item)=>item.status === "discovered").length,
+            "Discovered"
+        ]
+    ].map(([value, label])=>`<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+    $("#approvedSignalGallery").innerHTML = approved.length ? approved.map((signal)=>`<a class="approved-signal-card" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">
+    ${mediaPreview(signal, false)}
+    <div class="approved-signal-copy">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at || signal.created_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span></div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+    </div>
+  </a>`).join("") : `<div class="empty-state">No approved signals yet.</div>`;
+}
+function homepageSelect(values, selected, field) {
+    return `<select data-homepage-field="${field}">${values.map((value)=>`<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`).join("")}</select>`;
+}
+function renderHomepageCandidates() {
+    fillHomepageCandidateFilters();
+    const approved = approvedSignals();
+    const visible = visibleHomepageCandidateSignals();
+    $("#homepageCandidateCount").textContent = `${visible.length} / ${approved.length} approved signals`;
+    $("#homepageCandidateStats").innerHTML = [
+        [
+            approved.length,
+            "Approved Signals"
+        ],
+        [
+            approved.filter((item)=>item.homepage_candidate === true).length,
+            "Homepage Candidates"
+        ],
+        [
+            approved.filter((item)=>item.homepage_candidate === false).length,
+            "Not Candidates"
+        ],
+        [
+            approved.filter((item)=>item.homepage_candidate === "unknown").length,
+            "Unknown"
+        ],
+        [
+            approved.filter((item)=>item.media_urls.length > 0).length,
+            "With Media"
+        ],
+        [
+            approved.filter((item)=>item.is_concept).length,
+            "Concepts"
+        ]
+    ].map(([value, label])=>`<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+    $("#homepageCandidateList").innerHTML = visible.length ? visible.map((signal)=>`<article class="homepage-candidate-card" data-homepage-signal-id="${escapeHtml(signal.id)}">
+    ${mediaPreview(signal, false)}
+    <div class="homepage-candidate-main">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at || signal.created_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span>${escapeHtml(homepageCandidateFilterValue(signal.homepage_candidate))}</span><span>${escapeHtml(signal.homepage_category)}</span><span>${escapeHtml(signal.visual_asset_type)}</span>${signal.is_concept ? "<span>Concept</span>" : ""}</div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+      <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 260))}</p>
+      <a class="mini-button homepage-signal-link" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>
+    </div>
+    <div class="homepage-review-controls">
+      <label>Candidate${homepageSelect(homepageCandidateStatuses, homepageCandidateFilterValue(signal.homepage_candidate), "homepage_candidate")}</label>
+      <label>Category${homepageSelect(homepageCategories, signal.homepage_category, "homepage_category")}</label>
+      <label>Visual Asset${homepageSelect(visualAssetTypes, signal.visual_asset_type, "visual_asset_type")}</label>
+      <label>Score<input data-homepage-field="homepage_score" type="number" min="0" max="5" value="${escapeHtml(signal.homepage_score)}" /></label>
+      <label class="check-label"><input data-homepage-field="is_concept" type="checkbox" ${signal.is_concept ? "checked" : ""}/>Concept</label>
+      <label class="homepage-reasons">Reasons<textarea data-homepage-field="homepage_reasons" rows="3" placeholder="One reason per line">${escapeHtml(signal.homepage_reasons.join("\n"))}</textarea></label>
+      <button class="mini-button" data-homepage-action="save">Save Homepage Review</button>
+    </div>
+  </article>`).join("") : `<div class="empty-state">No approved signals match homepage candidate filters.</div>`;
 }
 function renderRawSignals() {
     fillRawSignalFilters();
@@ -725,6 +891,8 @@ function renderRawSignals() {
       <div class="raw-signal-actions"><a class="mini-button" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>${rawSignalActions(signal)}</div>
     </div>
   </article>`).join("") : `<div class="empty-state">No raw signals match the current filters.</div>`;
+    renderApprovedSignals();
+    renderHomepageCandidates();
 }
 function renderUrlCell(source, type, label, field) {
     const url = String(source[field] ?? "");
@@ -883,7 +1051,7 @@ async function load() {
         api("/api/raw-signals")
     ]);
     snapshot = normalizeSnapshot(registry);
-    rawSignals = safeArray(signals);
+    rawSignals = safeArray(signals).map(normalizeRawSignal);
     render();
 }
 async function reloadInspector() {
@@ -963,6 +1131,7 @@ sourceList.addEventListener("change", async (event)=>{
 Object.values(filters).forEach((element)=>element.addEventListener("input", render));
 Object.values(coverageFilters).forEach((element)=>element.addEventListener("input", renderCoverage));
 Object.values(rawSignalFilters).forEach((element)=>element.addEventListener("input", renderRawSignals));
+Object.values(homepageCandidateFilters).forEach((element)=>element.addEventListener("input", renderHomepageCandidates));
 $("#rawSignalList").addEventListener("click", async (event)=>{
     const button = event.target.closest("button[data-raw-signal-action]");
     if (!button) return;
@@ -978,6 +1147,33 @@ $("#rawSignalList").addEventListener("click", async (event)=>{
         rawSignals = rawSignals.map((item)=>item.id === updated.id ? updated : item);
         renderRawSignals();
         toast(`Raw signal marked ${status}`);
+    } catch (error) {
+        toast(error instanceof Error ? error.message : String(error));
+    }
+});
+$("#homepageCandidateList").addEventListener("click", async (event)=>{
+    const button = event.target.closest("button[data-homepage-action='save']");
+    if (!button) return;
+    const card = button.closest("[data-homepage-signal-id]");
+    const id = card?.dataset.homepageSignalId;
+    if (!card || !id) return;
+    const reasons = card.querySelector("[data-homepage-field='homepage_reasons']").value.split("\n").map((item)=>item.trim()).filter(Boolean);
+    const body = {
+        homepage_candidate: parseHomepageCandidateValue(card.querySelector("[data-homepage-field='homepage_candidate']").value),
+        homepage_category: card.querySelector("[data-homepage-field='homepage_category']").value,
+        visual_asset_type: card.querySelector("[data-homepage-field='visual_asset_type']").value,
+        homepage_score: Number(card.querySelector("[data-homepage-field='homepage_score']").value),
+        is_concept: card.querySelector("[data-homepage-field='is_concept']").checked,
+        homepage_reasons: reasons
+    };
+    try {
+        const updated = normalizeRawSignal(await api(`/api/raw-signals/${encodeURIComponent(id)}/homepage-review`, {
+            method: "PUT",
+            body: JSON.stringify(body)
+        }));
+        rawSignals = rawSignals.map((item)=>item.id === updated.id ? updated : item);
+        renderRawSignals();
+        toast("Homepage candidate review saved");
     } catch (error) {
         toast(error instanceof Error ? error.message : String(error));
     }

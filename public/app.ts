@@ -5,6 +5,10 @@ type RegistrySourceType = "github" | "github_releases" | "changelog" | "release_
 type ProductSourcePurpose = "identity" | "updates" | "media" | "discovery" | "community";
 type AccessType = "public" | "login_required" | "manual" | "unknown";
 type RawSignalStatus = "discovered" | "pending_review" | "approved" | "rejected" | "archived";
+type HomepageCandidateStatus = boolean | "unknown";
+type HomepageCandidateFilterValue = "true" | "false" | "unknown";
+type HomepageCategory = "new_ui" | "new_workflow" | "new_interaction_pattern" | "agent_experience" | "canvas_workspace" | "concept" | "unknown";
+type VisualAssetType = "video" | "gif" | "screenshot" | "flow_diagram" | "concept_mockup" | "unknown";
 interface ProductSource { id: string; type: string; url: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; priority: number; status: "active" | "disabled" | "paused"; collector: string; last_checked_at: string; last_update_at: string; screenshot_count: number; gif_count: number; video_count: number; health: "unchecked" | "ok" | "failed" | "redirected" | "timeout"; scan_frequency: string; notes: string; }
 interface SuggestedSource { id: string; type: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; url: string; reason: string; confidence: number; status: "suggested" | "pending_review" | "verified" | "rejected"; parent_source_id: string; relation_type: string; }
 interface SourceCandidate { candidate_key: string; product?: string; product_id?: string; product_slug?: string; product_name?: string; source_id?: string; url: string; type: string; purpose: ProductSourcePurpose; primary_purpose?: ProductSourcePurpose; purposes?: ProductSourcePurpose[]; access_type?: AccessType; priority: "P1" | "P2" | "P3"; source: string; status: "pending_review" | "pending" | "suggested" | "accepted" | "rejected"; }
@@ -14,7 +18,7 @@ interface Health { source_id: string; source_type: SourceType; url: string; fina
 interface Audit { product_name: string; updates_30d: number; latest_update_at: string; screenshot_count: number; gif_count: number; video_count: number; media_score: number; activity_score: number; collector_priority: "high" | "medium" | "low"; }
 interface Coverage { product_name: string; source_id: string; identity_sources: number; updates_sources: number; media_sources: number; discovery_sources: number; community_sources: number; x_sources: number; github_sources: number; missing_identity_source: boolean; missing_updates_source: boolean; missing_media_source: boolean; needs_review_count: number; coverage_score: number; }
 interface Review { source_id: string; source_type: SourceType; manual_verified: boolean; media_marked: boolean; updated_at: string; }
-interface RawSignal { id: string; product: string; source_id: string; source_url: string; signal_url: string; title: string; description: string; published_at: string; raw_text: string; media_urls: string[]; media_types: string[]; source_type: string; status: RawSignalStatus; quality_score: number; created_at: string; updated_at: string; }
+interface RawSignal { id: string; product: string; source_id: string; source_url: string; signal_url: string; title: string; description: string; published_at: string; raw_text: string; media_urls: string[]; media_types: string[]; source_type: string; status: RawSignalStatus; quality_score: number; homepage_candidate: HomepageCandidateStatus; homepage_score: number; homepage_reasons: string[]; homepage_category: HomepageCategory; is_concept: boolean; visual_asset_type: VisualAssetType; created_at: string; updated_at: string; }
 interface Snapshot { sources: Source[]; health: Health[]; reviews: Review[]; audit: Audit[]; candidates: SourceCandidate[]; recommendations: Record<string, SourceRecommendation[]>; coverage: Coverage[]; }
 
 const categories: Category[] = ["Chat", "IDE", "Workflow", "Agent", "Canvas", "Research", "Design", "Automation", "Prompt→App", "Other"];
@@ -48,6 +52,9 @@ let coverageSort: { key: CoverageSortKey; direction: "asc" | "desc" } = { key: "
 const productSourceTypes = ["homepage", "changelog", "release_notes", "blog", "news", "docs", "github_repo", "community", "forum", "discord", "reddit", "events", "slack", "github_releases", "github_releases_rss", "x", "youtube", "product_hunt", "rss"];
 const productSourcePurposes = ["identity", "updates", "media", "discovery", "community"];
 const productSourceStatuses = ["active", "disabled", "paused"];
+const homepageCandidateStatuses: HomepageCandidateFilterValue[] = ["true", "false", "unknown"];
+const homepageCategories: HomepageCategory[] = ["new_ui", "new_workflow", "new_interaction_pattern", "agent_experience", "canvas_workspace", "concept", "unknown"];
+const visualAssetTypes: VisualAssetType[] = ["video", "gif", "screenshot", "flow_diagram", "concept_mockup", "unknown"];
 const accessTypes: AccessType[] = ["public", "login_required", "manual", "unknown"];
 const publicAccessTypes = new Set(["homepage", "docs", "blog", "news", "release_notes", "github", "github_repo", "github_releases", "github_releases_rss", "rss", "youtube", "product_hunt", "changelog"]);
 const loginRequiredAccessTypes = new Set(["x", "discord", "slack"]);
@@ -135,6 +142,35 @@ function normalizeSnapshot(value: unknown): Snapshot {
   };
 }
 
+function normalizeRawSignal(signal: RawSignal): RawSignal {
+  const homepageCandidate = parseHomepageCandidateValue(signal.homepage_candidate);
+  const homepageCategory = homepageCategories.includes(signal.homepage_category) ? signal.homepage_category : "unknown";
+  const visualAssetType = visualAssetTypes.includes(signal.visual_asset_type) ? signal.visual_asset_type : "unknown";
+  return {
+    ...signal,
+    media_urls: safeArray<string>(signal.media_urls),
+    media_types: safeArray<string>(signal.media_types),
+    homepage_candidate: homepageCandidate,
+    homepage_score: typeof signal.homepage_score === "number" ? signal.homepage_score : 0,
+    homepage_reasons: safeArray<string>(signal.homepage_reasons),
+    homepage_category: homepageCategory,
+    is_concept: Boolean(signal.is_concept),
+    visual_asset_type: visualAssetType,
+  };
+}
+
+function parseHomepageCandidateValue(value: unknown): HomepageCandidateStatus {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return "unknown";
+}
+
+function homepageCandidateFilterValue(value: HomepageCandidateStatus): HomepageCandidateFilterValue {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  return "unknown";
+}
+
 const sourceList = $("#sourceList");
 const dialog = $("#sourceDialog") as HTMLDialogElement;
 const inspectorDialog = $("#inspectorDialog") as HTMLDialogElement;
@@ -169,6 +205,13 @@ const rawSignalFilters = {
   product: $("#rawSignalProductFilter") as HTMLSelectElement,
   type: $("#rawSignalTypeFilter") as HTMLSelectElement,
   status: $("#rawSignalStatusFilter") as HTMLSelectElement,
+};
+const homepageCandidateFilters = {
+  candidate: $("#homepageCandidateFilter") as HTMLSelectElement,
+  mediaOnly: $("#homepageWithMediaFilter") as HTMLInputElement,
+  category: $("#homepageCategoryFilter") as HTMLSelectElement,
+  visualAssetType: $("#homepageVisualAssetFilter") as HTMLSelectElement,
+  conceptOnly: $("#homepageConceptFilter") as HTMLInputElement,
 };
 
 function escapeHtml(value: unknown): string {
@@ -444,14 +487,19 @@ function rawSignalActions(signal: RawSignal): string {
     .join("");
 }
 
-function mediaPreview(signal: RawSignal): string {
+function mediaPreview(signal: RawSignal, interactive = true): string {
   const mediaUrl = safeArray<string>(signal.media_urls)[0];
   if (!mediaUrl) return `<div class="raw-signal-media empty">No media</div>`;
   const type = safeArray<string>(signal.media_types)[0] ?? "";
   if (type === "video" || /\.(?:mp4|webm|mov)(?:$|[?#])/i.test(mediaUrl)) {
-    return `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>`;
+    return interactive
+      ? `<a class="raw-signal-media video" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">Video media</a>`
+      : `<div class="raw-signal-media video">Video media</div>`;
   }
-  return `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></a>`;
+  const image = `<img src="${escapeHtml(mediaUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`;
+  return interactive
+    ? `<a class="raw-signal-media" href="${escapeHtml(mediaUrl)}" target="_blank" rel="noreferrer">${image}</a>`
+    : `<div class="raw-signal-media">${image}</div>`;
 }
 
 function fillRawSignalFilters(): void {
@@ -469,11 +517,112 @@ function fillRawSignalFilters(): void {
   rawSignalFilters.status.value = current.status;
 }
 
+function fillHomepageCandidateFilters(): void {
+  const current = {
+    category: homepageCandidateFilters.category.value,
+    visualAssetType: homepageCandidateFilters.visualAssetType.value,
+  };
+  homepageCandidateFilters.category.innerHTML = `<option value="">All</option>${homepageCategories.map((value) => `<option value="${value}">${value}</option>`).join("")}`;
+  homepageCandidateFilters.visualAssetType.innerHTML = `<option value="">All</option>${visualAssetTypes.map((value) => `<option value="${value}">${value}</option>`).join("")}`;
+  homepageCandidateFilters.category.value = current.category;
+  homepageCandidateFilters.visualAssetType.value = current.visualAssetType;
+}
+
 function visibleRawSignals(): RawSignal[] {
   return safeArray<RawSignal>(rawSignals).filter((signal) =>
     (!rawSignalFilters.product.value || signal.product === rawSignalFilters.product.value)
     && (!rawSignalFilters.type.value || signal.source_type === rawSignalFilters.type.value)
     && (!rawSignalFilters.status.value || signal.status === rawSignalFilters.status.value));
+}
+
+function signalSortTimestamp(signal: RawSignal): number {
+  const published = Date.parse(signal.published_at || "");
+  if (Number.isFinite(published)) return published;
+  const created = Date.parse(signal.created_at || "");
+  return Number.isFinite(created) ? created : 0;
+}
+
+function approvedSignals(): RawSignal[] {
+  return safeArray<RawSignal>(rawSignals)
+    .filter((signal) => signal.status === "approved")
+    .sort((a, b) => signalSortTimestamp(b) - signalSortTimestamp(a));
+}
+
+function homepageCandidateSortValue(signal: RawSignal): number {
+  if (signal.homepage_candidate === true) return 2;
+  if (signal.homepage_candidate === "unknown") return 1;
+  return 0;
+}
+
+function visibleHomepageCandidateSignals(): RawSignal[] {
+  return approvedSignals()
+    .filter((signal) =>
+      (!homepageCandidateFilters.candidate.value || homepageCandidateFilterValue(signal.homepage_candidate) === homepageCandidateFilters.candidate.value)
+      && (!homepageCandidateFilters.mediaOnly.checked || safeArray<string>(signal.media_urls).length > 0)
+      && (!homepageCandidateFilters.category.value || signal.homepage_category === homepageCandidateFilters.category.value)
+      && (!homepageCandidateFilters.visualAssetType.value || signal.visual_asset_type === homepageCandidateFilters.visualAssetType.value)
+      && (!homepageCandidateFilters.conceptOnly.checked || signal.is_concept))
+    .sort((a, b) =>
+      homepageCandidateSortValue(b) - homepageCandidateSortValue(a)
+      || Number(Boolean(b.media_urls.length)) - Number(Boolean(a.media_urls.length))
+      || b.homepage_score - a.homepage_score
+      || signalSortTimestamp(b) - signalSortTimestamp(a));
+}
+
+function renderApprovedSignals(): void {
+  const approved = approvedSignals();
+  const all = safeArray<RawSignal>(rawSignals);
+  $("#approvedSignalCount").textContent = `${approved.length} approved`;
+  $("#approvedSignalStats").innerHTML = [
+    [approved.length, "Total Approved"],
+    [all.filter((item) => item.status === "rejected").length, "Rejected"],
+    [all.filter((item) => item.status === "archived").length, "Archived"],
+    [all.filter((item) => item.status === "discovered").length, "Discovered"],
+  ].map(([value, label]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+  $("#approvedSignalGallery").innerHTML = approved.length ? approved.map((signal) => `<a class="approved-signal-card" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">
+    ${mediaPreview(signal, false)}
+    <div class="approved-signal-copy">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at || signal.created_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span></div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+    </div>
+  </a>`).join("") : `<div class="empty-state">No approved signals yet.</div>`;
+}
+
+function homepageSelect<T extends string>(values: T[], selected: T, field: string): string {
+  return `<select data-homepage-field="${field}">${values.map((value) => `<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`).join("")}</select>`;
+}
+
+function renderHomepageCandidates(): void {
+  fillHomepageCandidateFilters();
+  const approved = approvedSignals();
+  const visible = visibleHomepageCandidateSignals();
+  $("#homepageCandidateCount").textContent = `${visible.length} / ${approved.length} approved signals`;
+  $("#homepageCandidateStats").innerHTML = [
+    [approved.length, "Approved Signals"],
+    [approved.filter((item) => item.homepage_candidate === true).length, "Homepage Candidates"],
+    [approved.filter((item) => item.homepage_candidate === false).length, "Not Candidates"],
+    [approved.filter((item) => item.homepage_candidate === "unknown").length, "Unknown"],
+    [approved.filter((item) => item.media_urls.length > 0).length, "With Media"],
+    [approved.filter((item) => item.is_concept).length, "Concepts"],
+  ].map(([value, label]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+  $("#homepageCandidateList").innerHTML = visible.length ? visible.map((signal) => `<article class="homepage-candidate-card" data-homepage-signal-id="${escapeHtml(signal.id)}">
+    ${mediaPreview(signal, false)}
+    <div class="homepage-candidate-main">
+      <div class="raw-signal-meta"><span>${escapeHtml(signal.product)}</span><span>${escapeHtml(signal.source_type)}</span><span>${formatTime(signal.published_at || signal.created_at)}</span><span>Q${Math.round(signal.quality_score ?? 0)}</span><span>${escapeHtml(homepageCandidateFilterValue(signal.homepage_candidate))}</span><span>${escapeHtml(signal.homepage_category)}</span><span>${escapeHtml(signal.visual_asset_type)}</span>${signal.is_concept ? "<span>Concept</span>" : ""}</div>
+      <h3>${escapeHtml(signal.title || "Untitled signal")}</h3>
+      <p>${escapeHtml(signal.description || signal.raw_text.slice(0, 260))}</p>
+      <a class="mini-button homepage-signal-link" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>
+    </div>
+    <div class="homepage-review-controls">
+      <label>Candidate${homepageSelect(homepageCandidateStatuses, homepageCandidateFilterValue(signal.homepage_candidate), "homepage_candidate")}</label>
+      <label>Category${homepageSelect(homepageCategories, signal.homepage_category, "homepage_category")}</label>
+      <label>Visual Asset${homepageSelect(visualAssetTypes, signal.visual_asset_type, "visual_asset_type")}</label>
+      <label>Score<input data-homepage-field="homepage_score" type="number" min="0" max="5" value="${escapeHtml(signal.homepage_score)}" /></label>
+      <label class="check-label"><input data-homepage-field="is_concept" type="checkbox" ${signal.is_concept ? "checked" : ""}/>Concept</label>
+      <label class="homepage-reasons">Reasons<textarea data-homepage-field="homepage_reasons" rows="3" placeholder="One reason per line">${escapeHtml(signal.homepage_reasons.join("\n"))}</textarea></label>
+      <button class="mini-button" data-homepage-action="save">Save Homepage Review</button>
+    </div>
+  </article>`).join("") : `<div class="empty-state">No approved signals match homepage candidate filters.</div>`;
 }
 
 function renderRawSignals(): void {
@@ -497,6 +646,8 @@ function renderRawSignals(): void {
       <div class="raw-signal-actions"><a class="mini-button" href="${escapeHtml(signal.signal_url)}" target="_blank" rel="noreferrer">Open Signal</a>${rawSignalActions(signal)}</div>
     </div>
   </article>`).join("") : `<div class="empty-state">No raw signals match the current filters.</div>`;
+  renderApprovedSignals();
+  renderHomepageCandidates();
 }
 
 function renderUrlCell(source: Source, type: SourceType, label: string, field: keyof Source): string {
@@ -600,7 +751,7 @@ async function load(): Promise<void> {
     api<unknown>("/api/raw-signals"),
   ]);
   snapshot = normalizeSnapshot(registry);
-  rawSignals = safeArray<RawSignal>(signals);
+  rawSignals = safeArray<RawSignal>(signals).map(normalizeRawSignal);
   render();
 }
 async function reloadInspector(): Promise<void> {
@@ -641,6 +792,7 @@ sourceList.addEventListener("change", async (event) => {
 Object.values(filters).forEach((element) => element.addEventListener("input", render));
 Object.values(coverageFilters).forEach((element) => element.addEventListener("input", renderCoverage));
 Object.values(rawSignalFilters).forEach((element) => element.addEventListener("input", renderRawSignals));
+Object.values(homepageCandidateFilters).forEach((element) => element.addEventListener("input", renderHomepageCandidates));
 $("#rawSignalList").addEventListener("click", async (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-raw-signal-action]");
   if (!button) return;
@@ -651,6 +803,33 @@ $("#rawSignalList").addEventListener("click", async (event) => {
     rawSignals = rawSignals.map((item) => item.id === updated.id ? updated : item);
     renderRawSignals();
     toast(`Raw signal marked ${status}`);
+  } catch (error) {
+    toast(error instanceof Error ? error.message : String(error));
+  }
+});
+$("#homepageCandidateList").addEventListener("click", async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-homepage-action='save']");
+  if (!button) return;
+  const card = button.closest<HTMLElement>("[data-homepage-signal-id]");
+  const id = card?.dataset.homepageSignalId;
+  if (!card || !id) return;
+  const reasons = card.querySelector<HTMLTextAreaElement>("[data-homepage-field='homepage_reasons']")!.value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const body = {
+    homepage_candidate: parseHomepageCandidateValue(card.querySelector<HTMLSelectElement>("[data-homepage-field='homepage_candidate']")!.value),
+    homepage_category: card.querySelector<HTMLSelectElement>("[data-homepage-field='homepage_category']")!.value,
+    visual_asset_type: card.querySelector<HTMLSelectElement>("[data-homepage-field='visual_asset_type']")!.value,
+    homepage_score: Number(card.querySelector<HTMLInputElement>("[data-homepage-field='homepage_score']")!.value),
+    is_concept: card.querySelector<HTMLInputElement>("[data-homepage-field='is_concept']")!.checked,
+    homepage_reasons: reasons,
+  };
+  try {
+    const updated = normalizeRawSignal(await api<RawSignal>(`/api/raw-signals/${encodeURIComponent(id)}/homepage-review`, { method: "PUT", body: JSON.stringify(body) }));
+    rawSignals = rawSignals.map((item) => item.id === updated.id ? updated : item);
+    renderRawSignals();
+    toast("Homepage candidate review saved");
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error));
   }

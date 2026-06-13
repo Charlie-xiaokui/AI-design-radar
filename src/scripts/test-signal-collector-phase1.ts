@@ -94,6 +94,12 @@ function rawSignal(partial: Partial<RawSignal>): RawSignal {
     source_type: partial.source_type ?? "blog",
     status: partial.status ?? "discovered",
     quality_score: partial.quality_score ?? 75,
+    homepage_candidate: partial.homepage_candidate ?? "unknown",
+    homepage_score: partial.homepage_score ?? 0,
+    homepage_reasons: partial.homepage_reasons ?? [],
+    homepage_category: partial.homepage_category ?? "unknown",
+    is_concept: partial.is_concept ?? false,
+    visual_asset_type: partial.visual_asset_type ?? "unknown",
     created_at: partial.created_at ?? now,
     updated_at: partial.updated_at ?? now,
   };

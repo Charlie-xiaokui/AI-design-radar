@@ -14,7 +14,7 @@ import { discoverFollowupSources } from "./services/source-followup.ts";
 import { addProductSource, deleteProductSource, reorderProductSources, updateProductSource } from "./services/product-source-manager.ts";
 import { JsonSourceCandidateRepository, sourceCandidateKey } from "./repositories/source-candidate-repository.ts";
 import { acceptSourceCandidate, rejectSourceCandidate } from "./services/source-candidates.ts";
-import { readRawSignals, updateRawSignalStatus } from "./repositories/raw-signal-repository.ts";
+import { readRawSignals, updateRawSignalHomepageReview, updateRawSignalStatus } from "./repositories/raw-signal-repository.ts";
 import { isAllowedRawSignalTransition } from "./services/raw-signal-review.ts";
 import { RAW_SIGNAL_STATUSES, type RawSignalStatus, type SourceCandidate } from "./types/source.ts";
 
@@ -143,6 +143,15 @@ async function handleApi(request: IncomingMessage, response: ServerResponse, url
       throw new Error(`Invalid raw signal status transition: ${existing.status} -> ${body.status}`);
     }
     sendJson(response, 200, await updateRawSignalStatus(id, body.status));
+    return true;
+  }
+  const rawSignalHomepageReviewMatch = url.pathname.match(/^\/api\/raw-signals\/([^/]+)\/homepage-review$/);
+  if (rawSignalHomepageReviewMatch?.[1] && request.method === "PUT") {
+    const id = decodeURIComponent(rawSignalHomepageReviewMatch[1]);
+    const existing = (await readRawSignals()).find((item) => item.id === id);
+    if (!existing) throw new Error("Raw signal not found");
+    if (existing.status !== "approved") throw new Error("Only approved signals can be reviewed as homepage candidates");
+    sendJson(response, 200, await updateRawSignalHomepageReview(id, (await readBody(request)) as never));
     return true;
   }
 

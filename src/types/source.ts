@@ -55,6 +55,9 @@ export const SOURCE_RELATION_TYPES = ["linked_from_update", "media_followup", "o
 export const SUGGESTED_SOURCE_STATUSES = ["suggested", "pending_review", "verified", "rejected"] as const;
 export const ACCESS_TYPES = ["public", "login_required", "manual", "unknown"] as const;
 export const RAW_SIGNAL_STATUSES = ["discovered", "pending_review", "approved", "rejected", "archived"] as const;
+export const HOMEPAGE_CANDIDATE_STATUSES = [true, false, "unknown"] as const;
+export const HOMEPAGE_CATEGORIES = ["new_ui", "new_workflow", "new_interaction_pattern", "agent_experience", "canvas_workspace", "concept", "unknown"] as const;
+export const VISUAL_ASSET_TYPES = ["video", "gif", "screenshot", "flow_diagram", "concept_mockup", "unknown"] as const;
 export const SOURCE_TYPES = [
   "homepage",
   "github",
@@ -77,6 +80,9 @@ export type SourceRelationType = (typeof SOURCE_RELATION_TYPES)[number];
 export type SuggestedSourceStatus = (typeof SUGGESTED_SOURCE_STATUSES)[number];
 export type AccessType = (typeof ACCESS_TYPES)[number];
 export type RawSignalStatus = (typeof RAW_SIGNAL_STATUSES)[number];
+export type HomepageCandidateStatus = boolean | "unknown";
+export type HomepageCategory = (typeof HOMEPAGE_CATEGORIES)[number];
+export type VisualAssetType = (typeof VISUAL_ASSET_TYPES)[number];
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
 export interface ProductSource {
@@ -265,6 +271,12 @@ export interface RawSignal {
   source_type: ProductSourceType;
   status: RawSignalStatus;
   quality_score: number;
+  homepage_candidate: HomepageCandidateStatus;
+  homepage_score: number;
+  homepage_reasons: string[];
+  homepage_category: HomepageCategory;
+  is_concept: boolean;
+  visual_asset_type: VisualAssetType;
   created_at: string;
   updated_at: string;
 }
